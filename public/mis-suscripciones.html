@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mis Suscripciones</title>
+  <link rel="stylesheet" href="/css/mis-suscripciones.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="container-suscripciones">
+    <header>
+      <h1>Mis Suscripciones</h1>
+      <div class="language-selector">
+        <label for="idioma">Idioma:</label>
+        <select id="idioma">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+    </header>
+
+    <section class="suscripcion-lista" id="suscripcion-lista">
+      <!-- Las suscripciones se insertan dinámicamente acá -->
+    </section>
+
+    <!-- Botón volver atrás -->
+    <div class="volver-atras">
+      <button onclick="window.history.back()">⬅ Volver</button>
+    </div>
+  </div>
+
+  <script>
+    async function cargarSuscripciones() {
+      try {
+        const res = await fetch('/listar-suscripciones');
+        const suscripciones = await res.json();
+        const contenedor = document.getElementById('suscripcion-lista');
+        contenedor.innerHTML = '';
+
+        if (!suscripciones.length) {
+          contenedor.innerHTML = '<p>No hay suscripciones registradas.</p>';
+          return;
+        }
+
+        suscripciones.forEach(sus => {
+          const card = document.createElement('div');
+          card.className = 'suscripcion-card';
+          const estadoClase = sus.estado === 'Activa' ? 'estado-activa' : 'estado-cancelada';
+
+          card.innerHTML = `
+            <h3>${sus.planNombre}</h3>
+            <p><strong>Estado:</strong> <span class="${estadoClase}">${sus.estado}</span></p>
+            <p><strong>Inicio:</strong> ${new Date(sus.fechaInicio).toLocaleDateString()}</p>
+            <p><strong>Fin:</strong> ${new Date(sus.fechaFin).toLocaleDateString()}</p>
+            ${sus.estado === 'Activa' ? `
+              <button onclick="cambiarPlan('${sus._id}')">Cambiar Plan</button>
+              <button onclick="cancelarSuscripcion('${sus._id}')">Cancelar Suscripción</button>
+            ` : ''}
+          `;
+
+          contenedor.appendChild(card);
+        });
+
+      } catch (err) {
+        console.error('Error al cargar suscripciones:', err);
+        document.getElementById('suscripcion-lista').innerHTML = '<p>Error al cargar suscripciones.</p>';
+      }
+    }
+
+    function cambiarPlan(id) {
+      alert(`Funcionalidad para cambiar el plan de la suscripción ${id} (en desarrollo).`);
+    }
+
+    async function cancelarSuscripcion(id) {
+      const confirmar = confirm("¿Estás seguro de que querés cancelar esta suscripción?");
+      if (!confirmar) return;
+
+      try {
+        const res = await fetch(`/cancelar-suscripcion/${id}`, { method: 'PUT' });
+        const data = await res.json();
+
+        if (res.ok) {
+          alert("Suscripción cancelada exitosamente.");
+          cargarSuscripciones(); // Actualizar vista
+        } else {
+          alert(`Error: ${data.mensaje}`);
+        }
+      } catch (error) {
+        console.error('Error al cancelar suscripción:', error);
+        alert("Error al cancelar la suscripción.");
+      }
+    }
+
+    // Ejecutar al cargar la página
+    cargarSuscripciones();
+  </script>
+</body>
+</html>

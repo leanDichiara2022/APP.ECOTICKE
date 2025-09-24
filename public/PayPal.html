@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pago con PayPal</title>
+  <script src="https://www.paypal.com/sdk/js?client-id=<%= PAYPAL_CLIENT_ID %>&currency=USD"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #status { margin-top: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h1>Pagar con PayPal</h1>
+  <div id="paypal-button-container"></div>
+  <div id="status"></div>
+
+  <script>
+    // Botón de PayPal
+    paypal.Buttons({
+      createOrder: async (data, actions) => {
+        try {
+          const res = await fetch("/api/paypal/create-order", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+          });
+          const dataJson = await res.json();
+          return dataJson.id; // orderID
+        } catch (err) {
+          document.getElementById("status").textContent = "Error al crear la orden: " + err.message;
+        }
+      },
+      onApprove: async (data, actions) => {
+        try {
+          const res = await fetch(`/api/paypal/capture-order/${data.orderID}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+          });
+          const capture = await res.json();
+          document.getElementById("status").textContent = 
+            `Pago realizado con éxito! Estado: ${capture.data.status || capture.message}`;
+        } catch (err) {
+          document.getElementById("status").textContent = "Error al capturar el pago: " + err.message;
+        }
+      },
+      onError: (err) => {
+        document.getElementById("status").textContent = "Error en PayPal: " + err;
+      }
+    }).render('#paypal-button-container');
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,124 @@
+/* Archivo CSS para register.html */
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #ffffff;
+}
+
+.app-logo {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.app-logo img {
+    width: 300px;
+    height: auto;
+}
+
+.register-container {
+    width: 90%;
+    max-width: 450px; /* Reducir el ancho máximo */
+    background: #f9f9f9;
+    padding: 30px; /* Reducir padding */
+    box-shadow: 4px 6px 10px rgba(1, 1, 1, 0.1);
+    border-radius: 12px;
+    position: relative;
+    text-align: center;
+}
+
+h1 {
+    font-size: 2rem; /* Reducir tamaño del título */
+    color: #117b24;
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin: 8px 0 4px;
+    font-size: 0.9rem; /* Reducir tamaño de letra */
+    color: #333;
+    text-align: left;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    width: 100%;
+    padding: 8px; /* Reducir padding */
+    margin: 4px 0 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem; /* Reducir tamaño de fuente */
+}
+
+button {
+    width: 100%;
+    padding: 8px; /* Reducir padding */
+    background-color: #117b24;
+    color: #ffffff;
+    font-size: 0.9rem; /* Reducir tamaño de fuente */
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0e6f20;
+}
+
+button:active {
+    background-color: #0d631e;
+}
+
+button:focus {
+    outline: none;
+}
+
+p {
+    font-size: 0.8rem; /* Reducir tamaño de texto */
+    margin: 10px 0 0;
+}
+
+a {
+    color: #117b24;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+    .register-container {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    input, button {
+        font-size: 0.8rem;
+        padding: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.6rem;
+    }
+
+    button {
+        font-size: 0.8rem;
+        padding: 5px;
+    }
+}

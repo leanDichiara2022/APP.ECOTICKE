@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>Inicio de Sesión - TickECO</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Dosis:400,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/login.css" />
+</head>
+<body>
+  <div class="app-logo">
+    <a href="/"><img src="/images/TickECO-Photoroom.png" alt="Logo de la aplicación" /></a>
+  </div>
+
+  <div class="login-container">
+    <h1>Inicia Sesión</h1>
+
+    <form id="loginForm" autocomplete="on">
+      <div class="form-group">
+        <label for="email">Correo Electrónico:</label>
+        <input type="email" id="email" name="email" placeholder="Ingrese su correo" required />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Contraseña:</label>
+        <input type="password" id="password" name="password" placeholder="Ingrese su contraseña" required />
+      </div>
+
+      <button type="submit">Iniciar Sesión</button>
+    </form>
+
+    <p>¿No tienes una cuenta? <a href="register.html">Regístrate aquí</a></p>
+    <p id="loginMessage" class="message"></p>
+  </div>
+
+  <!-- 👇 el js ya contiene la lógica de login -->
+  <script src="/js/login.js"></script>
+</body>
+</html>

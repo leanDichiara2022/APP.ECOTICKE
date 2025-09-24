@@ -1,0 +1,176 @@
+/* Estilos generales */
+body {
+    margin: 0;
+    padding: 30px;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding-top: 10px;
+}
+
+/* Contenedor principal */
+.container {
+    width: 95%;
+    max-width: 1200px;
+    background: #f9f9f9;
+    padding: 20px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* Logo */
+.app-logo {
+    margin-bottom: 0px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    background-color: #ffffff;
+}
+
+.app-logo img {
+    max-width: 150px;
+    height: auto;
+    display: block;
+}
+
+/* Encabezado */
+h1 {
+    font-size: 2rem;
+    color: #139b2d;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+p {
+    font-size: 1.1rem;
+    color: #117b24;
+    text-align: center;
+}
+
+/* Tabla del historial */
+.ticket-history {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.ticket-history th, .ticket-history td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+.ticket-history th {
+    background-color: #139b2d;
+    color: #ffffff;
+    border-radius: 6px;
+}
+
+.ticket-history tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.ticket-history tr:hover {
+    background-color: #ddd;
+}
+
+/* Botones */
+button {
+    padding: 8px 16px;
+    background-color: #139b2d;
+    color: #ffffff;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #117b24;
+}
+
+button:active {
+    background-color: #0f5e1c;
+}
+
+/* Contenedor del historial */
+.container-historial {
+    width: 100%;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Estilo para mensajes de estado */
+.status-Enviado {
+    color: #1a7f37;
+    font-weight: bold;
+}
+
+.status-Pendiente {
+    color: #b58900;
+    font-weight: bold;
+}
+
+.status-Fallido {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Responsividad */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    .ticket-history th, .ticket-history td {
+        font-size: 0.9rem;
+        padding: 8px;
+    }
+
+    button {
+        font-size: 0.9rem;
+        padding: 8px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    .ticket-history th, .ticket-history td {
+        font-size: 0.8rem;
+        padding: 6px;
+    }
+
+    button {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+
+    .app-logo img {
+        max-width: 120px;
+    }
+}

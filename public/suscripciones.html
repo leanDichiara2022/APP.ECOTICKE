@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Suscripción</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://www.paypal.com/sdk/js?client-id=AXZz7ZD3Ih_lhvxciMQyc-qEHgR-00OAKKA7Utb2mAa-bW9rQsiS2WhiPDEKVDiysnXckKRy2VEdnZF2&currency=USD"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .plan {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .plan h2 {
+      margin-top: 0;
+    }
+
+    .plan ul {
+      padding-left: 20px;
+    }
+
+    .plan button {
+      background-color: #1e88e5;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    .plan button:hover {
+      background-color: #1565c0;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 16px;
+      background: #3498db;
+      color: #fff;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+
+    .back-btn:hover {
+      background: #2980b9;
+    }
+
+    @media (max-width: 600px) {
+      .plan {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Planes de Suscripción</h1>
+
+    <div class="plan personal">
+      <h2>Plan Personal</h2>
+      <p><strong>Gratis el primer mes</strong>, luego <strong>$2 USD / mes</strong></p>
+      <ul>
+        <li>Ideal para uso individual</li>
+        <li>Acceso completo a funciones</li>
+        <li>Envío de tickets por email/WhatsApp</li>
+      </ul>
+      <div id="paypal-button-container"></div>
+    </div>
+
+    <div class="plan empresarial">
+      <h2>Plan Empresarial</h2>
+      <p><strong>$2 USD / PC</strong> + <strong>$500 USD / mes</strong> (soporte)</p>
+      <ul>
+        <li>Hasta 100 computadoras</li>
+        <li>Soporte técnico prioritario</li>
+        <li>Gestión multiusuario y multi-ticket</li>
+      </ul>
+      <button onclick="subscribe('empresarial')">Suscribirme</button>
+    </div>
+
+    <!-- 🔹 Botón volver a main.html -->
+    <a href="main.html" class="back-btn">⬅ Volver</a>
+  </div>
+
+  <script>
+    function subscribe(plan) {
+      alert(`Seleccionaste el plan: ${plan.toUpperCase()}. En breve serás redirigido al pago.`);
+      window.location.href = `/api/subscribe?plan=${plan}`;
+    }
+
+    paypal.Buttons({
+      createOrder: function(data, actions) {
+        return fetch('/api/create-paypal-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(res => res.json())
+        .then(data => data.id);
+      },
+      onApprove: function(data, actions) {
+        return actions.order.capture().then(function(details) {
+          alert('Pago completado por ' + details.payer.name.given_name);
+          window.location.href = '/gracias';
+        });
+      }
+    }).render('#paypal-button-container');
+  </script>
+</body>
+</html>

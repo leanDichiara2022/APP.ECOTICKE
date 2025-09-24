@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Planes de Suscripción</title>
+  <link rel="stylesheet" href="./css/main.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .form-group { margin-bottom: 15px; }
+    #seccion-pago {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin: auto;
+    }
+    .metodo-pago-container {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 15px;
+    }
+    .metodo-pago {
+      border: 2px solid transparent;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: border 0.3s;
+    }
+    .metodo-pago img {
+      height: 40px;
+    }
+    .metodo-pago.selected {
+      border-color: #007bff;
+      background-color: #eef4ff;
+    }
+    footer {
+      background: #f1f1f1;
+      padding: 15px;
+      text-align: center;
+      margin-top: 50px;
+      font-size: 14px;
+      color: #555;
+    }
+    #language-select {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 5px;
+    }
+    /* Botón volver atrás */
+    .btn-back {
+      display: inline-block;
+      margin: 15px 0;
+      padding: 8px 14px;
+      background: #3498db;
+      color: #fff;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    .btn-back:hover {
+      background: #2c80b4;
+    }
+  </style>
+</head>
+<body>
+  <select id="language-select" onchange="setLanguage(this.value)">
+    <option value="es">Español</option>
+    <option value="en">English</option>
+    <option value="pt">Português</option>
+  </select>
+
+  <div class="container-historial">
+    <header>
+      <img src="./images/TickECO-Photoroom.png" alt="Logo" class="app-logo" />
+      <h1 data-i18n="title">Planes de Suscripción</h1>
+      <!-- Botón volver atrás -->
+      <a href="main.html" class="btn-back">← Volver atrás</a>
+    </header>
+
+    <div class="planes-container">
+      <!-- Plan Personal -->
+      <div class="plan-card">
+        <h2 data-i18n="personal.title">Plan Personal</h2>
+        <p data-i18n="personal.desc">Ideal para individuos que quieren enviar tickets desde su dispositivo móvil o PC.</p>
+        <p class="price" data-i18n="personal.price">Gratis por 30 días<br>Luego $2 USD/mes</p>
+        <ul class="features">
+          <li data-i18n="features.1">1. Generación de PDF</li>
+          <li data-i18n="features.2">2. Envío por Email o WhatsApp</li>
+          <li data-i18n="features.3">3. Solución a impresora</li>
+          <li data-i18n="features.4">4. Ahorro en papel e insumos</li>
+          <li data-i18n="features.5">5. Sistema sostenible</li>
+          <li data-i18n="features.6">6. Facturación con AFIP</li>
+        </ul>
+        <label for="devices-personal" data-i18n="label.devices">Cantidad de dispositivos:</label>
+        <input type="number" id="devices-personal" min="1" value="1" onchange="calcularTotal('personal')" />
+        <p id="total-personal">Total: $2 USD/mes</p>
+        <button onclick="mostrarPago('personal')" data-i18n="button.select">Seleccionar</button>
+      </div>
+
+      <!-- Plan Empresarial -->
+      <div class="plan-card">
+        <h2 data-i18n="empresarial.title">Plan Empresarial</h2>
+        <p data-i18n="empresarial.desc">Para empresas con múltiples PCs. Desde 10 hasta 100 dispositivos. Soporte técnico opcional.</p>
+        <p class="price" data-i18n="empresarial.price">$2 USD/mes por PC<br>+ $500 USD soporte</p>
+        <ul class="features">
+          <li data-i18n="features.1">1. Generación de PDF</li>
+          <li data-i18n="features.2">2. Envío por Email o WhatsApp</li>
+          <li data-i18n="features.3">3. Solución a impresora</li>
+          <li data-i18n="features.4">4. Ahorro en papel e insumos</li>
+          <li data-i18n="features.5">5. Sistema sostenible</li>
+          <li data-i18n="features.6">6. Facturación con AFIP</li>
+        </ul>
+        <label for="devices-empresarial" data-i18n="label.devices">Cantidad de dispositivos:</label>
+        <input type="number" id="devices-empresarial" min="1" value="1" onchange="calcularTotal('empresarial')" />
+        <label><input type="checkbox" id="soporte" onchange="calcularTotal('empresarial')" /> <span data-i18n="label.support">Incluir soporte técnico</span></label>
+        <p id="total-empresarial">Total: $2 USD/mes</p>
+        <button onclick="mostrarPago('empresarial')" data-i18n="button.select">Seleccionar</button>
+      </div>
+    </div>
+
+    <!-- Sección de Pago -->
+    <div id="seccion-pago" style="display:none; margin-top: 40px;">
+      <h2 data-i18n="payment.title">Datos de Pago</h2>
+      <form onsubmit="procesarPago(event)" novalidate>
+        <div class="form-group">
+          <label for="nombre" data-i18n="label.name">Nombre completo:</label>
+          <input type="text" id="nombre" required />
+        </div>
+
+        <div class="form-group">
+          <label data-i18n="label.method">Método de pago:</label>
+          <div class="metodo-pago-container">
+            <div class="metodo-pago" onclick="seleccionarMetodo('paypal')">
+              <img src="./images/icons/descarga.png" alt="paypal" />
+            </div>
+            <div class="metodo-pago" onclick="seleccionarMetodo('tarjeta')">
+              <img src="./images/icons/images (1).png" alt="tarjeta" />
+            </div>
+            <div class="metodo-pago" onclick="seleccionarMetodo('mercado')">
+              <img src="./images/icons/mercadoPago.png" alt="mercado" />
+            </div>
+          </div>
+          <input type="hidden" id="metodoSeleccionado" required />
+        </div>
+
+        <div class="form-group">
+          <label for="tarjeta" data-i18n="label.card">Número de tarjeta:</label>
+          <input type="text" id="tarjeta" pattern="\d{16}" placeholder="1234567812345678" required />
+        </div>
+
+        <div class="form-group">
+          <label for="vencimiento" data-i18n="label.expiry">Fecha de vencimiento:</label>
+          <input type="text" id="vencimiento" placeholder="MM/AA" pattern="(0[1-9]|1[0-2])\/\d{2}" required />
+        </div>
+
+        <div class="form-group">
+          <label for="cvv">CVV:</label>
+          <input type="text" id="cvv" pattern="\d{3}" placeholder="123" required />
+        </div>
+
+        <input type="hidden" id="plan" name="plan" />
+        <input type="hidden" id="cantidad" name="cantidad" />
+        <input type="hidden" id="total" name="total" />
+        <input type="hidden" id="soporteIncluido" name="soporteIncluido" />
+
+        <button type="submit" data-i18n="button.pay">Pagar y continuar</button>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 TickEco - Todos los derechos reservados.</p>
+    <p><a href="/">Inicio</a> | <a href="/contacto.html">Contacto</a> | <a href="/terminos.html">Términos y Condiciones</a></p>
+  </footer>
+
+  <script>
+    const textos = {
+      es: {
+        title: "Planes de Suscripción",
+        "personal.title": "Plan Personal",
+        "personal.desc": "Ideal para individuos que quieren enviar tickets desde su dispositivo móvil o PC.",
+        "personal.price": "Gratis por 30 días<br>Luego $2 USD/mes",
+        "empresarial.title": "Plan Empresarial",
+        "empresarial.desc": "Para empresas con múltiples PCs. Desde 10 hasta 100 dispositivos. Soporte técnico opcional.",
+        "empresarial.price": "$2 USD/mes por PC<br>+ $500 USD soporte",
+        "features.1": "1. Generación de PDF",
+        "features.2": "2. Envío por Email o WhatsApp",
+        "features.3": "3. Solución a impresora",
+        "features.4": "4. Ahorro en papel e insumos",
+        "features.5": "5. Sistema sostenible",
+        "features.6": "6. Facturación con AFIP",
+        "label.devices": "Cantidad de dispositivos:",
+        "label.support": "Incluir soporte técnico",
+        "label.name": "Nombre completo:",
+        "label.method": "Método de pago:",
+        "label.card": "Número de tarjeta:",
+        "label.expiry": "Fecha de vencimiento:",
+        "button.select": "Seleccionar",
+        "button.pay": "Pagar y continuar",
+        "payment.title": "Datos de Pago"
+      },
+      en: {
+        title: "Subscription Plans",
+        "personal.title": "Personal Plan",
+        "personal.desc": "Ideal for individuals sending tickets from mobile or PC.",
+        "personal.price": "Free for 30 days<br>Then $2 USD/month",
+        "empresarial.title": "Business Plan",
+        "empresarial.desc": "For businesses with multiple PCs. From 10 to 100 devices. Optional tech support.",
+        "empresarial.price": "$2 USD/month per PC<br>+ $500 USD support",
+        "features.1": "1. PDF Generation",
+        "features.2": "2. Email or WhatsApp sending",
+        "features.3": "3. Printer solution",
+        "features.4": "4. Paper and supply saving",
+        "features.5": "5. Sustainable system",
+        "features.6": "6. AFIP Billing",
+        "label.devices": "Number of devices:",
+        "label.support": "Include technical support",
+        "label.name": "Full name:",
+        "label.method": "Payment method:",
+        "label.card": "Card number:",
+        "label.expiry": "Expiry date:",
+        "button.select": "Select",
+        "button.pay": "Pay and continue",
+        "payment.title": "Payment Information"
+      },
+      pt: {
+        title: "Planos de Assinatura",
+        "personal.title": "Plano Pessoal",
+        "personal.desc": "Ideal para indivíduos que enviam tíquetes por celular ou PC.",
+        "personal.price": "Grátis por 30 dias<br>Depois $2 USD/mês",
+        "empresarial.title": "Plano Empresarial",
+        "empresarial.desc": "Para empresas com vários PCs. De 10 a 100 dispositivos. Suporte opcional.",
+        "empresarial.price": "$2 USD/mês por PC<br>+ $500 USD suporte",
+        "features.1": "1. Geração de PDF",
+        "features.2": "2. Envio por Email ou WhatsApp",
+        "features.3": "3. Solução para impressora",
+        "features.4": "4. Economia de papel e insumos",
+        "features.5": "5. Sistema sustentável",
+        "features.6": "6. Faturamento com AFIP",
+        "label.devices": "Quantidade de dispositivos:",
+        "label.support": "Incluir suporte técnico",
+        "label.name": "Nome completo:",
+        "label.method": "Método de pagamento:",
+        "label.card": "Número do cartão:",
+        "label.expiry": "Data de validade:",
+        "button.select": "Selecionar",
+        "button.pay": "Pagar e continuar",
+        "payment.title": "Informações de Pagamento"
+      }
+    };
+
+    function setLanguage(lang) {
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.getAttribute("data-i18n");
+        if (textos[lang] && textos[lang][key]) {
+          el.innerHTML = textos[lang][key];
+        }
+      });
+    }
+
+    let planSeleccionado = '';
+
+    function calcularTotal(plan) {
+      let total = 0;
+      if (plan === 'personal') {
+        const d = parseInt(document.getElementById('devices-personal').value);
+        total = d * 2;
+        document.getElementById('total-personal').textContent = `Total: $${total} USD/mes`;
+      } else {
+        const d = parseInt(document.getElementById('devices-empresarial').value);
+        const soporte = document.getElementById('soporte').checked ? 500 : 0;
+        total = d * 2 + soporte;
+        document.getElementById('total-empresarial').textContent = `Total: $${total} USD/mes`;
+      }
+    }
+
+    function mostrarPago(plan) {
+      planSeleccionado = plan;
+      const cantidad = plan === 'personal'
+        ? parseInt(document.getElementById('devices-personal').value)
+        : parseInt(document.getElementById('devices-empresarial').value);
+      const soporte = plan === 'empresarial' && document.getElementById('soporte').checked;
+      const total = plan === 'personal'
+        ? cantidad * 2
+        : cantidad * 2 + (soporte ? 500 : 0);
+
+      document.getElementById('plan').value = plan;
+      document.getElementById('cantidad').value = cantidad;
+      document.getElementById('total').value = total;
+      document.getElementById('soporteIncluido').value = soporte;
+
+      document.getElementById('seccion-pago').style.display = 'block';
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function seleccionarMetodo(metodo) {
+      document.getElementById('metodoSeleccionado').value = metodo;
+      document.querySelectorAll('.metodo-pago').forEach(el => el.classList.remove('selected'));
+      document.querySelectorAll('.metodo-pago').forEach(el => {
+        if (el.querySelector('img').alt.toLowerCase().includes(metodo)) {
+          el.classList.add('selected');
+        }
+      });
+    }
+
+    function procesarPago(event) {
+      event.preventDefault();
+      const form = event.target;
+      if (!form.checkValidity()) {
+        alert('Por favor, complete todos los campos correctamente.');
+        return;
+      }
+
+      alert("Pago procesado correctamente. Gracias por tu suscripción.");
+      form.reset();
+      document.getElementById('seccion-pago').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

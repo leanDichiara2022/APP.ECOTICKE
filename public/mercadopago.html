@@ -1,0 +1,51 @@
+<!-- mercadopago.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago con MercadoPago</title>
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+</head>
+<body>
+    <h1>Suscripción a tu plan</h1>
+    <button id="btn-pagar">Pagar con MercadoPago</button>
+
+    <script>
+        const btn = document.getElementById('btn-pagar');
+
+        btn.addEventListener('click', async () => {
+            try {
+                // Datos del usuario y plan
+                const payload = {
+                    userId: "ID_DEL_USUARIO",
+                    planId: "ID_DEL_PLAN",
+                    planNombre: "Plan Personal",
+                    precioUSD: 2.0
+                };
+
+                // Crear preferencia desde backend
+                const response = await fetch('/mercadopago/crear-preferencia', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (data.init_point) {
+                    // Redirigir al checkout de MercadoPago
+                    window.location.href = data.init_point;
+                } else {
+                    alert('Error al generar la preferencia de pago');
+                    console.error(data);
+                }
+            } catch (error) {
+                console.error('Error al iniciar el pago:', error);
+                alert('Error al iniciar el pago');
+            }
+        });
+    </script>
+</body>
+</html>

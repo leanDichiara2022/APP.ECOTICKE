@@ -1,0 +1,52 @@
+{
+  "name": "apptickeco",
+  "version": "1.0.0",
+  "main": "electron/main.js",
+  "description": "Aplicación de tickets PDF con integración de Electron",
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+    "start": "node server.js",
+    "electron": "electron .",
+    "dev": "concurrently \"npm run start\" \"npm run electron\"",
+    "desktop": "electron ."
+  },
+  "dependencies": {
+    "axios": "^1.8.4",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.3",
+    "chokidar": "^4.0.3",
+    "cloudconvert": "^3.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.1.0",
+    "express-session": "^1.18.1",
+    "fs": "^0.0.1-security",
+    "helmet": "^8.1.0",
+    "html-pdf": "^1.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "libreoffice-convert": "^1.6.1",
+    "mammoth": "^1.9.1",
+    "mercadopago": "^2.4.0",
+    "mongoose": "^8.13.0",
+    "multer": "^1.4.5-lts.2",
+    "nodemailer": "^6.9.16",
+    "path": "^0.12.7",
+    "pdf-to-printer": "^5.6.0",
+    "pdfkit": "^0.15.2",
+    "puppeteer": "^24.1.1",
+    "resend": "^4.0.1",
+    "twilio": "^5.4.0",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "xss-clean": "^0.1.4"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "electron": "^38.1.2"
+  }
+}

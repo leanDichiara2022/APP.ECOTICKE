@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title data-i18n="title">Panel de Tickets</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <style>
+    /* pequeño helper para la preview */
+    .hidden { display: none; }
+    .preview-box {
+      margin-top: 12px;
+      width: 100%;
+      max-width: 900px;
+      height: 500px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .preview-box iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .preview-actions { margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container-historial">
+    <header>
+      <div id="appTitle">
+        <img src="/images/TickECO-Photoroom.png" alt="App Logo" class="app-logo" />
+        <h1 data-i18n="main_heading">Panel de Envío de Tickets</h1>
+      </div>
+      <div class="language-selector">
+        <label for="language" data-i18n="language_label">Idioma:</label>
+        <select id="language">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+          <option value="pt">Português</option>
+        </select>
+        <button class="logout-button" onclick="logout()" data-i18n="logout_button">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Formulario de subida de archivo -->
+      <section class="upload-section">
+        <h2 data-i18n="upload_heading">Subir archivo (se convierte a PDF si es necesario)</h2>
+        <form id="pdfForm" enctype="multipart/form-data" novalidate>
+          <label for="archivo" class="file-label">Seleccionar archivo:</label>
+          <input type="file" id="archivo" name="archivo" accept="*/*" />
+          <button type="submit" id="uploadBtn" data-i18n="upload_button">Subir y convertir</button>
+        </form>
+        <p style="font-size: 0.9em; margin-top: 5px; color: #666;">
+          Podés subir cualquier archivo. Si no es PDF, se intentará convertir automáticamente.
+        </p>
+        <p id="pdfMessage" style="margin-top: 10px;"></p>
+      </section>
+
+      <!-- Selector de Plantillas -->
+      <section class="template-section">
+        <h2 data-i18n="template_heading">Elegir Plantilla</h2>
+        <div class="template-options">
+          <label for="templateSelect" data-i18n="template_label">Selecciona una plantilla predefinida:</label>
+          <select id="templateSelect">
+            <option value="factura_detallada">Detallada</option>
+            <option value="factura_simple">Simple</option>
+            <option value="factura_editable">Editable</option>
+            <option value="pdf_template_2">PDF Template 2</option>
+          </select>
+        </div>
+        <div class="upload-template">
+          <label for="customTemplate" class="file-label" data-i18n="template_custom_label">O subir tu propia plantilla:</label>
+          <input type="file" id="customTemplate" name="customTemplate" accept=".html,.pdf" />
+        </div>
+        <div class="preview-actions">
+          <button id="previewTemplateBtn" class="btn-preview">Vista previa</button>
+        </div>
+        <div id="templatePreview" class="preview-box hidden">
+          <iframe id="templateIframe"></iframe>
+        </div>
+      </section>
+
+      <!-- Formulario de envío -->
+      <section class="send-ticket-section">
+        <div class="input-group">
+          <label for="countryCode" data-i18n="label_country">Código País:</label>
+          <select id="countryCode">
+            <option value="+54">+54 (Argentina)</option>
+            <option value="+55">+55 (Brasil)</option>
+            <option value="+1">+1 (EE.UU.)</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="phoneNumber" data-i18n="label_phone">WhatsApp:</label>
+          <!-- agregado data-i18n para que el placeholder se traduzca -->
+          <input type="tel" id="phoneNumber" data-i18n="label_phone" placeholder="Ej: 1123456789" />
+        </div>
+
+        <div class="input-group">
+          <label for="email" data-i18n="label_email">Correo Electrónico:</label>
+          <!-- agregado data-i18n -->
+          <input type="email" id="email" data-i18n="label_email" placeholder="cliente@correo.com" />
+        </div>
+
+        <div class="input-group">
+          <label for="extraDetails" data-i18n="label_extra">Detalles Extra:</label>
+          <!-- agregado data-i18n -->
+          <textarea id="extraDetails" data-i18n="label_extra" placeholder="Opcional..."></textarea>
+        </div>
+
+        <div class="options">
+          <button id="searchClient" data-i18n="button_search">Buscar Cliente</button>
+        </div>
+
+        <div class="send-options">
+          <button id="sendWhatsappBtn" class="send-btn">
+            <img src="/images/whatsapp.png" alt="WhatsApp" class="icon" />
+            Enviar
+          </button>
+
+          <button id="sendEmailBtn" class="send-btn">
+            <img src="/images/mail.png" alt="Email" class="icon" />
+            Enviar
+          </button>
+        </div>
+      </section>
+
+      <!-- Botón Historial -->
+      <section class="historial-button">
+        <a href="/tickets.html">
+          <button class="btn-historial" id="viewHistoryBtn" data-i18n="button_history">
+            Ver Historial
+          </button>
+        </a>
+      </section>
+
+      <!-- Planes -->
+      <section class="planes-container">
+        <div class="plan-card">
+          <h2 data-i18n="plan_personal_title">Plan Personal</h2>
+          <p data-i18n="plan_personal_desc">Para uso individual</p>
+          <p class="price" data-i18n="plan_personal_price">Gratis el primer mes</p>
+          <!-- agregado id para poder manejar el click desde JS -->
+          <button id="subscribeBtn" data-i18n="button_subscribe">Suscribirme</button>
+        </div>
+        <div class="plan-card">
+          <h2 data-i18n="plan_business_title">Plan Empresarial</h2>
+          <p data-i18n="plan_business_desc">Ideal para negocios</p>
+          <p class="price" data-i18n="plan_business_price">$2 USD / equipo + soporte</p>
+          <!-- agregado id para poder manejar el click desde JS -->
+          <button id="contactBtn" data-i18n="button_contact">Contactar</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p data-i18n="footer_rights">© 2025 Tu Empresa. Todos los derechos reservados.</p>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/scripts/scripts.js"></script>
+  <script src="/js/main.js"></script>
+
+  <!-- Script Vista Previa Plantillas -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const previewBtn = document.getElementById("previewTemplateBtn");
+      const select = document.getElementById("templateSelect");
+      const previewBox = document.getElementById("templatePreview");
+      const iframe = document.getElementById("templateIframe");
+
+      if (previewBtn) {
+        previewBtn.addEventListener("click", () => {
+          const value = select.value;
+          if (!value) {
+            alert("⚠️ Seleccioná una plantilla");
+            return;
+          }
+          iframe.src = `/preview/${value}`;
+          previewBox.classList.remove("hidden");
+        });
+      }
+    });
+  </script>
+
+  <!-- Listener Electron (solo si está disponible) -->
+  <script>
+    if (typeof require !== "undefined") {
+      try {
+        const { ipcRenderer } = require("electron");
+        ipcRenderer.on("new-print-file", (event, filePath) => {
+          showToast("📄 Nuevo archivo detectado en impresora virtual", "success");
+        });
+      } catch (err) {
+        console.warn("Electron no disponible en este entorno.");
+      }
+    }
+  </script>
+
+  <!-- script que contiene la lógica de traducción + búsqueda cliente etc -->
+  <script src="/scripts/main-extra.js"></script>
+
+  <div id="toastContainer" class="toast-container"></div>
+</body>
+</html>

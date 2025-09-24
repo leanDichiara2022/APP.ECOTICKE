@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { width: 100%; max-width: 600px; margin: auto; border: 2px solid black; padding: 20px; border-radius: 10px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo { max-width: 150px; }
+        .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .table, .table th, .table td { border: 1px solid black; }
+        .table th, .table td { padding: 8px; text-align: left; }
+        .total { font-weight: bold; text-align: right; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <% if (!logo_url || logo_url === "X") { %>
+                <p style="font-size: 24px; font-weight: bold;">X</p>
+            <% } else { %>
+                <img src="<%= logo_url %>" class="logo" alt="Logo del negocio">
+            <% } %>
+            <h2><%= nombre_negocio %></h2>
+            <p><%= direccion_negocio %></p>
+        </div>
+        <p><%= descripcion %></p>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% items.forEach(item => { %>
+                    <tr>
+                        <td><%= item.producto %></td>
+                        <td><%= item.cantidad %></td>
+                        <td>$<%= item.precio %></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        <p class="total">Total: $<%= total %></p>
+    </div>
+</body>
+</html>

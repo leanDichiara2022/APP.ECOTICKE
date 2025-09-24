@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Suscripción - Prueba PayPal</title>
+  <link rel="stylesheet" href="./css/paypal_test.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="paypal-container">
+    <h1>Suscripción de prueba</h1>
+    <p>Probando pago de <strong>$2.00 USD</strong> con PayPal (modo sandbox).</p>
+    
+    <div id="paypal-button-container"></div>
+  </div>
+
+  <!-- SDK de PayPal con client-id de sandbox -->
+  <script src="https://www.paypal.com/sdk/js?client-id=sb&currency=USD"></script>
+
+  <script>
+    paypal.Buttons({
+      // Crear orden al iniciar el flujo de pago
+      createOrder: function(data, actions) {
+        return fetch("/paypal/create-order", {
+          method: "POST"
+        })
+        .then(res => res.json())
+        .then(data => {
+          console.log("🧾 Orden creada:", data);
+          return data.id;
+        });
+      },
+
+      // Al aprobar el pago
+      onApprove: function(data, actions) {
+        console.log("✅ Pago aprobado:", data);
+
+        fetch("/paypal/guardar-suscripcion", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ paypalOrderId: data.orderID })
+        })
+        .then(res => res.json())
+        .then(result => {
+          alert("¡Pago realizado y suscripción registrada exitosamente!");
+          console.log("💾 Resultado:", result);
+        })
+        .catch(err => {
+          console.error("❌ Error al guardar en base de datos:", err);
+          alert("Pago realizado, pero no se pudo registrar en la base de datos.");
+        });
+      },
+
+      // En caso de error
+      onError: function(err) {
+        console.error("❌ Error durante el pago:", err);
+        alert("Hubo un error al procesar el pago.");
+      }
+    }).render('#paypal-button-container');
+  </script>
+</body>
+</html>

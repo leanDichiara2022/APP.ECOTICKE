@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar PDF</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Generar PDF Personalizado</h1>
+
+        <form id="pdf-form" enctype="multipart/form-data">
+            <label for="nombre_negocio">Nombre del Negocio:</label>
+            <input type="text" id="nombre_negocio" name="nombre_negocio" required>
+
+            <label for="logo">Subir Logo:</label>
+            <input type="file" id="logo" name="logo" accept="image/*">
+
+            <label for="descripcion">Descripción:</label>
+            <textarea id="descripcion" name="descripcion" required></textarea>
+
+            <label for="plantilla">Seleccionar Plantilla:</label>
+            <select id="plantilla" name="plantilla">
+                <option value="template1.html">Plantilla 1</option>
+                <option value="template2.html">Plantilla 2</option>
+            </select>
+
+            <button type="submit">Generar PDF</button>
+        </form>
+    </div>
+
+    <script src="/js/generar_pdf.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Historial de Tickets</title>
+  <link rel="stylesheet" href="/css/main.css" />
+</head>
+<body>
+  <h1>Historial de Tickets</h1>
+  <table border="1" cellpadding="8" cellspacing="0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Fecha</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (tickets.length > 0) { %>
+        <% tickets.forEach(ticket => { %>
+          <tr>
+            <td><%= ticket._id %></td>
+            <td><%= ticket.createdAt.toLocaleString() %></td>
+            <td><%= ticket.estado || "Enviado" %></td>
+          </tr>
+        <% }) %>
+      <% } else { %>
+        <tr>
+          <td colspan="3">No hay tickets registrados.</td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+  <a href="/main">⬅ Volver al panel</a>
+</body>
+</html>
