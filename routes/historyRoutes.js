@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const fs = require("fs");
 const path = require("path");
-const Ticket = require("../models/ticket");
+const Ticket = require("../models/Ticket");
+
 
 // Obtener todos los datos del historial
 router.get("/data", async (req, res) => {

@@ -18,7 +18,7 @@ dotenv.config();
 // Inicializar Express
 const app = express();
 
-// Conexión a MongoDB
+// ================== Conexión a MongoDB ==================
 const connectDB = async () => {
     try {
         logger.info("⏳ Conectando a MongoDB...");
@@ -33,24 +33,21 @@ const connectDB = async () => {
     }
 };
 
-// Configurar motor de vistas EJS
+// ================== Configuración Motor de Vistas ==================
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "templates"));
 
-// Middlewares de seguridad
+// ================== Middlewares de Seguridad ==================
 app.use(helmet());
 app.use(mongoSanitize());
 app.use(xss());
 
-// Limitar peticiones repetidas
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
+app.use(rateLimit({
+    windowMs: 15 * 60 * 1000,
     max: 100,
     message: "⚠️ Demasiadas solicitudes desde esta IP, intenta de nuevo más tarde"
-});
-app.use(limiter);
+}));
 
-// Body parsers
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -65,19 +62,22 @@ app.use((req, res, next) => {
     next();
 });
 
-// Configuración CORS
+// ================== CORS ==================
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: [
+        "http://localhost:3000",
+        "https://ecoticke.com"
+    ],
     credentials: true
 }));
 
-// Logs básicos de cada request
+// Logs básicos
 app.use((req, res, next) => {
     logger.info(`${req.method} ${req.originalUrl} - IP: ${req.ip}`);
     next();
 });
 
-// Crear carpetas necesarias
+// ================== Carpetas Estáticas ==================
 const pdfDirectory = path.join(__dirname, "generated_pdfs");
 if (!fs.existsSync(pdfDirectory)) fs.mkdirSync(pdfDirectory, { recursive: true });
 app.use("/generated_pdfs", express.static(pdfDirectory));
@@ -88,16 +88,16 @@ app.use("/uploads", express.static(uploadsDir));
 
 app.use(express.static(path.join(__dirname, "public")));
 
-// Modelos
+// ================== Modelos ==================
 const Ticket = require("./models/ticket");
 
-// Rutas
+// ================== Rutas ==================
 app.use("/api/templates", require("./routes/templates"));
 app.use("/api/usuarios", require("./routes/usuarios"));
 app.use("/api/upload", require("./routes/upload"));
-app.use("/api/upload-send", require("./routes/uploadAndSend")); // subpath único
-app.use("/api/enviar-pdf", require("./routes/enviarPDF"));        // subpath único
-app.use("/api/payPal", require("./routes/PayPal"));
+app.use("/api/upload-send", require("./routes/uploadAndSend"));
+app.use("/api/enviar-pdf", require("./routes/enviarPDF"));
+app.use("/api/paypal", require("./routes/paypal"));
 app.use("/api/suscripciones", require("./routes/suscripciones"));
 app.use("/api/history", require("./routes/historyRoutes"));
 app.use("/pdf", require("./routes/pdfRoutes"));
@@ -105,11 +105,15 @@ app.use("/api/auth", require("./routes/userRoutes"));
 app.use("/", require("./routes/planes"));
 app.use("/api/pdf", require("./routes/pdfUpload"));
 
-// Ruta de prueba PayPal
-app.get("/paypal-test", (req, res) => {
-    res.render("paypal_test", {
-        clientId: process.env.PAYPAL_CLIENT_ID || "NO_CLIENT_ID"
-    });
+// ================== Rutas Extras ==================
+// Página inicial -> index.html (login / registro)
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// Página principal -> main.html
+app.get("/main", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "main.html"));
 });
 
 // Página planes
@@ -117,26 +121,33 @@ app.get("/planes", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "planes.html"));
 });
 
-// Página principal
-app.get("/main", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "main.html"));
+// Test PayPal
+app.get("/paypal-test", (req, res) => {
+    res.render("paypal_test", {
+        clientId: process.env.PAYPAL_CLIENT_ID || "NO_CLIENT_ID"
+    });
+});
+
+// Vista final PayPal
+app.get("/paypal", (req, res) => {
+    const clientId = process.env.PAYPAL_CLIENT_ID || "NO_CLIENT_ID";
+    res.render("paypal_final", { PAYPAL_CLIENT_ID: clientId });
 });
 
 // Historial tickets
 app.get("/history", async (req, res) => {
     try {
         const tickets = await Ticket.find().sort({ createdAt: -1 });
-        res.render("ticketHistory", { tickets }); // vista consistente con EJS
+        res.render("ticketHistory", { tickets });
     } catch (error) {
         logger.error("❌ Error al cargar historial:", error);
         res.status(500).send("Error al cargar el historial de tickets");
     }
 });
 
-// Vista previa de plantillas
+// Vista previa plantillas
 app.get("/preview/:template", (req, res) => {
     const { template } = req.params;
-
     const templatesAvailable = {
         "factura_detallada": "factura_detallada",
         "factura_simple": "factura_simple",
@@ -167,21 +178,16 @@ app.get("/preview/:template", (req, res) => {
     }
 });
 
-// Middleware de error centralizado
+// ================== Middleware de Errores ==================
 app.use((err, req, res, next) => {
     logger.error(`Error en request: ${err.message}`, { stack: err.stack });
     res.status(500).json({ message: "Error interno del servidor" });
 });
 
-// Levantar servidor
+// ================== Levantar Servidor ==================
 const PORT = process.env.PORT || 3000;
 connectDB().then(() => {
-    app.listen(PORT, () => {
-        logger.info(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+    app.listen(PORT, "0.0.0.0", () => {
+        logger.info(`🚀 Servidor corriendo en http://0.0.0.0:${PORT}`);
     });
-});
-// ruta PayPal final
-app.get("/PayPal", (req, res) => {
-  const clientId = process.env.PAYPAL_CLIENT_ID;
-  res.render("paypal_final", { PAYPAL_CLIENT_ID: clientId });
 });
