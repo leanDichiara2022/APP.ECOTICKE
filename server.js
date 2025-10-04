@@ -10,7 +10,14 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const mongoSanitize = require("express-mongo-sanitize");
 const xss = require("xss-clean");
+const { Resend } = require("resend");
+const PDFDocument = require("pdfkit");
 const logger = require("./utils/logger");
+
+// Modelos
+const Usuario = require("./models/usuarios");
+const History = require("./models/history");
+const Ticket = require("./models/ticket");
 
 // Cargar variables de entorno
 dotenv.config();
@@ -88,10 +95,7 @@ app.use("/uploads", express.static(uploadsDir));
 
 app.use(express.static(path.join(__dirname, "public")));
 
-// ================== Modelos ==================
-const Ticket = require("./models/ticket");
-
-// ================== Rutas ==================
+// ================== Rutas principales ==================
 app.use("/api/templates", require("./routes/templates"));
 app.use("/api/usuarios", require("./routes/usuarios"));
 app.use("/api/upload", require("./routes/upload"));
@@ -105,36 +109,32 @@ app.use("/api/auth", require("./routes/userRoutes"));
 app.use("/", require("./routes/planes"));
 app.use("/api/pdf", require("./routes/pdfUpload"));
 
-// ================== Rutas Extras ==================
-// Página inicial -> index.html (login / registro)
+// ================== Páginas estáticas ==================
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Página principal -> main.html
 app.get("/main", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "main.html"));
 });
 
-// Página planes
 app.get("/planes", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "planes.html"));
 });
 
-// Test PayPal
+// ================== PayPal ==================
 app.get("/paypal-test", (req, res) => {
     res.render("paypal_test", {
         clientId: process.env.PAYPAL_CLIENT_ID || "NO_CLIENT_ID"
     });
 });
 
-// Vista final PayPal
 app.get("/paypal", (req, res) => {
     const clientId = process.env.PAYPAL_CLIENT_ID || "NO_CLIENT_ID";
     res.render("paypal_final", { PAYPAL_CLIENT_ID: clientId });
 });
 
-// Historial tickets
+// ================== Historial tickets ==================
 app.get("/history", async (req, res) => {
     try {
         const tickets = await Ticket.find().sort({ createdAt: -1 });
@@ -145,36 +145,62 @@ app.get("/history", async (req, res) => {
     }
 });
 
-// Vista previa plantillas
-app.get("/preview/:template", (req, res) => {
-    const { template } = req.params;
-    const templatesAvailable = {
-        "factura_detallada": "factura_detallada",
-        "factura_simple": "factura_simple",
-        "factura_editable": "factura_editable",
-        "pdf_template_2": "pdf_template_2"
-    };
+// ================== PDF + Email (Resend) ==================
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-    if (!templatesAvailable[template]) {
-        return res.status(404).send("❌ Plantilla no encontrada");
+app.post("/generate-pdf", (req, res) => {
+    const { countryCode, phoneNumber, email, extraDetails } = req.body;
+    if (!phoneNumber) {
+        return res.status(400).json({ mensaje: "Número de celular es obligatorio." });
     }
 
+    const pdfPath = path.join(pdfDirectory, "ticket.pdf");
+    const doc = new PDFDocument();
+    const writeStream = fs.createWriteStream(pdfPath);
+
+    doc.pipe(writeStream);
+    doc.fontSize(16).text("Detalles del Ticket", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(12)
+        .text(`Código de País: ${countryCode}`)
+        .text(`Número de Celular: ${phoneNumber}`)
+        .text(`Correo Electrónico: ${email || "N/A"}`)
+        .text("Detalles Adicionales:")
+        .text(extraDetails || "Sin detalles adicionales.");
+    doc.end();
+
+    writeStream.on("finish", () => {
+        logger.info("✅ PDF generado correctamente.");
+        res.status(200).json({ mensaje: "PDF generado exitosamente", pdfUrl: "/generated_pdfs/ticket.pdf" });
+    });
+
+    writeStream.on("error", (error) => {
+        logger.error("❌ Error al generar el PDF:", error);
+        res.status(500).json({ mensaje: "Error al generar el PDF", error });
+    });
+});
+
+app.post("/send-email", async (req, res) => {
+    const { recipientEmail } = req.body;
+    if (!recipientEmail) {
+        return res.status(400).json({ mensaje: "El correo electrónico del destinatario es obligatorio." });
+    }
+
+    const pdfUrl = `${req.protocol}://${req.get("host")}/generated_pdfs/ticket.pdf`;
+    const mensaje = `Hola, adjunto encontrarás el enlace a tu ticket generado: ${pdfUrl}`;
+
     try {
-        res.render(templatesAvailable[template], {
-            fecha: new Date().toLocaleDateString(),
-            logo_url: "/uploads/logo.png",
-            nombre_negocio: "Mi Negocio",
-            direccion_negocio: "Calle Falsa 123",
-            descripcion: "Factura de prueba",
-            items: [
-                { producto: "Producto A", cantidad: 2, precio: 10.00 },
-                { producto: "Producto B", cantidad: 1, precio: 20.00 }
-            ],
-            total: 40.00
+        const emailResponse = await resend.emails.send({
+            from: "tu-correo-verificado@tu-dominio.com",
+            to: recipientEmail,
+            subject: "Tu Ticket Generado",
+            text: mensaje,
         });
-    } catch (err) {
-        logger.error("❌ Error al renderizar la plantilla:", err);
-        res.status(500).send("Error al renderizar la plantilla");
+        logger.info("✅ Correo enviado correctamente.");
+        res.status(200).json({ mensaje: "Correo enviado exitosamente", detalles: emailResponse });
+    } catch (error) {
+        logger.error("❌ Error al enviar el correo:", error);
+        res.status(500).json({ mensaje: "Error al enviar el correo", error });
     }
 });
 
