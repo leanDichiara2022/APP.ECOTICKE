@@ -1,79 +1,81 @@
 // routes/mercadopago.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Suscripcion = require('../models/suscripcion');
-require('dotenv').config();
-const mercadopago = require('mercadopago');
+const Suscripcion = require("../models/suscripciones");
+const mercadopago = require("mercadopago");
+require("dotenv").config();
 
-// Configurar MercadoPago con token de producción
-mercadopago.configurations.setAccessToken(process.env.MP_ACCESS_TOKEN);
+// ✅ Configurar MercadoPago con token de producción
+mercadopago.configure({
+  access_token: process.env.MP_ACCESS_TOKEN,
+});
 
-// Crear preferencia de pago
-router.post('/crear-preferencia', async (req, res) => {
+// 📌 Crear preferencia de pago
+router.post("/crear-preferencia", async (req, res) => {
   try {
     const { userId, planId, planNombre, precioUSD } = req.body;
 
     if (!userId || !planId || !planNombre || !precioUSD) {
-      return res.status(400).json({ error: 'Faltan datos para crear la preferencia' });
+      return res.status(400).json({ error: "Faltan datos para crear la preferencia" });
     }
 
-    const preferenceData = {
+    const preference = {
       items: [
         {
           title: `Suscripción: ${planNombre}`,
           unit_price: parseFloat(precioUSD),
           quantity: 1,
-          currency_id: 'USD'
-        }
+          currency_id: "USD",
+        },
       ],
       back_urls: {
-        success: `${process.env.BASE_URL}/mercadopago/pago-exitoso`,
-        failure: `${process.env.BASE_URL}/mercadopago/pago-fallido`,
-        pending: `${process.env.BASE_URL}/mercadopago/pago-pendiente`
+        success: `${process.env.BASE_URL}/planes?status=success&plan=${planNombre}`,
+        failure: `${process.env.BASE_URL}/planes?status=failure`,
+        pending: `${process.env.BASE_URL}/planes?status=pending`,
       },
-      auto_return: 'approved',
-      metadata: {
-        userId,
-        planId,
-        planNombre
-      }
+      auto_return: "approved",
+      metadata: { userId, planId, planNombre },
     };
 
-    const preference = await mercadopago.preferences.create(preferenceData);
-    res.json({ id: preference.body.id, init_point: preference.body.init_point });
+    const result = await mercadopago.preferences.create(preference);
+
+    // ✅ Guardar suscripción en la base de datos
+    await new Suscripcion({
+      metodoPago: "MercadoPago",
+      preferenceId: result.body.id,
+      planId,
+      planNombre,
+      userId,
+      estado: "pendiente",
+      fechaInicio: new Date(),
+    }).save();
+
+    res.json({ init_point: result.body.init_point });
   } catch (error) {
-    console.error('❌ Error al crear preferencia MercadoPago:', error);
-    res.status(500).json({ error: 'Error al crear preferencia MercadoPago' });
+    console.error("❌ Error al crear preferencia MercadoPago:", error);
+    res.status(500).json({ error: "Error al crear preferencia MercadoPago" });
   }
 });
 
-// Webhook de MercadoPago
-router.post('/webhook', async (req, res) => {
+// 📩 Webhook de MercadoPago
+router.post("/webhook", async (req, res) => {
   try {
     const data = req.body;
-    console.log('📩 Webhook recibido de MercadoPago:', data);
+    console.log("📩 Webhook recibido:", data);
 
-    // Aquí actualizar la suscripción según data.type y data.id
-    // data.id es el id de la preferencia o payment
-    // Ejemplo:
-    // const suscripcion = await Suscripcion.findOne({ preferenceId: data.id });
-    // if (suscripcion) { suscripcion.estado = 'activo'; await suscripcion.save(); }
+    if (data && data.data && data.type === "payment") {
+      const paymentId = data.data.id;
+      await Suscripcion.findOneAndUpdate(
+        { preferenceId: paymentId },
+        { estado: "activo" },
+        { new: true }
+      );
+    }
 
-    res.status(200).send('OK');
+    res.status(200).send("OK");
   } catch (error) {
-    console.error('❌ Error en webhook MercadoPago:', error);
-    res.status(500).send('ERROR');
-  }
-});
-
-// Listar suscripciones (opcional)
-router.get('/listar-suscripciones', async (req, res) => {
-  try {
-    const suscripciones = await Suscripcion.find().sort({ fechaInicio: -1 });
-    res.status(200).json(suscripciones);
-  } catch (error) {
-    console.error('❌ Error al listar suscripciones:', error);
-    res.status(500).json({ error: 'Error al obtener suscripciones' });
+    console.error("❌ Error en webhook MercadoPago:", error);
+    res.status(500).send("ERROR");
   }
 });
 

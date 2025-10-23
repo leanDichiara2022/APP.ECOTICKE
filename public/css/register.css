@@ -1,124 +1,214 @@
-/* Archivo CSS para register.html */
-
+/* === Estilo general === */
 body {
-    margin: 0;
-    padding: 0;
-    font-family: Georgia, 'Times New Roman', Times, serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: #ffffff;
+  margin: 0;
+  padding: 0;
+  font-family: "Dosis", sans-serif;
+  background: linear-gradient(135deg, #ffffff 0%, #e8f5e9 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.app-logo {
-    margin-bottom: 20px;
-    text-align: center;
+/* === Header con logo y selector de idioma === */
+.app-header {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .app-logo img {
-    width: 300px;
-    height: auto;
+  width: 100px;
+  height: auto;
 }
 
+.language-selector select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 0.9rem;
+  background-color: #fff;
+  color: #117b24;
+  cursor: pointer;
+}
+
+/* === Contenedor de registro === */
 .register-container {
-    width: 90%;
-    max-width: 450px; /* Reducir el ancho máximo */
-    background: #f9f9f9;
-    padding: 30px; /* Reducir padding */
-    box-shadow: 4px 6px 10px rgba(1, 1, 1, 0.1);
-    border-radius: 12px;
-    position: relative;
-    text-align: center;
+  width: 90%;
+  max-width: 430px;
+  background: #f9f9f9;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  animation: fadeIn 0.6s ease-in-out;
 }
 
+/* === Animación de entrada === */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === Título === */
 h1 {
-    font-size: 2rem; /* Reducir tamaño del título */
-    color: #117b24;
-    margin-bottom: 15px;
+  font-size: 2rem;
+  color: #117b24;
+  margin-bottom: 20px;
+}
+
+/* === Formulario === */
+.form-group {
+  text-align: left;
+  margin-bottom: 15px;
 }
 
 label {
-    display: block;
-    margin: 8px 0 4px;
-    font-size: 0.9rem; /* Reducir tamaño de letra */
-    color: #333;
-    text-align: left;
+  font-size: 1rem;
+  color: #117b24;
+  font-weight: 600;
 }
 
-input[type="text"],
-input[type="email"],
-input[type="password"] {
-    width: 100%;
-    padding: 8px; /* Reducir padding */
-    margin: 4px 0 12px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 0.9rem; /* Reducir tamaño de fuente */
+input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 6px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.3s ease;
 }
 
+input:focus {
+  border-color: #117b24;
+}
+
+/* === Botón principal === */
 button {
-    width: 100%;
-    padding: 8px; /* Reducir padding */
-    background-color: #117b24;
-    color: #ffffff;
-    font-size: 0.9rem; /* Reducir tamaño de fuente */
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+  width: 100%;
+  padding: 12px;
+  background-color: #117b24;
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 button:hover {
-    background-color: #0e6f20;
+  background-color: #0f6f1d;
+  transform: scale(1.02);
 }
 
-button:active {
-    background-color: #0d631e;
-}
-
-button:focus {
-    outline: none;
-}
-
+/* === Texto secundario === */
 p {
-    font-size: 0.8rem; /* Reducir tamaño de texto */
-    margin: 10px 0 0;
+  font-size: 0.9rem;
+  color: #333;
+  margin-top: 15px;
 }
 
 a {
-    color: #117b24;
-    text-decoration: none;
-    font-weight: bold;
+  color: #117b24;
+  font-weight: 600;
+  text-decoration: none;
 }
 
 a:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
-/* Responsiveness */
+/* === Botón Volver === */
+.back-btn {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 10px 16px;
+  background: #3498db;
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.back-btn:hover {
+  background: #2980b9;
+  transform: scale(1.03);
+}
+
+/* === Mensajes === */
+.message {
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+.message.success {
+  color: #117b24;
+}
+
+.message.error {
+  color: red;
+}
+
+/* === Responsividad === */
 @media (max-width: 768px) {
-    .register-container {
-        padding: 20px;
-    }
+  .app-logo img {
+    width: 80px;
+  }
 
-    h1 {
-        font-size: 1.8rem;
-    }
+  .register-container {
+    padding: 20px;
+  }
 
-    input, button {
-        font-size: 0.8rem;
-        padding: 6px;
-    }
+  h1 {
+    font-size: 1.8rem;
+  }
+
+  input,
+  button {
+    font-size: 0.95rem;
+  }
 }
 
 @media (max-width: 480px) {
-    h1 {
-        font-size: 1.6rem;
-    }
+  body {
+    justify-content: flex-start;
+    padding-top: 80px;
+  }
 
-    button {
-        font-size: 0.8rem;
-        padding: 5px;
-    }
+  .app-logo img {
+    width: 70px;
+  }
+
+  .register-container {
+    width: 92%;
+    padding: 16px;
+    box-shadow: none;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  button {
+    padding: 10px;
+  }
+
+  p {
+    font-size: 0.85rem;
+  }
 }

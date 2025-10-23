@@ -1,159 +1,219 @@
-/* Estilos generales */
+/* ===== ESTILO GENERAL ===== */
 body {
-    margin: 0;
-    padding: 30px;
-    font-family: Georgia, 'Times New Roman', Times, serif;
-    background-color: #ffffff;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start; /* Alineación hacia la parte superior */
-    min-height: 100vh;
-    padding-top: 10px; /* Menor margen superior */
+  margin: 0;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  background-color: #ffffff;
+  color: #222;
 }
 
-/* Contenedor principal */
-.container {
-    width: 95%; /* Aumenta el ancho para ocupar más espacio */
-    max-width: 1200px; /* Ajusta el ancho máximo */
-    background: #f9f9f9;
-    padding: 20px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    align-items: center;
+/* ===== CONTENEDOR PRINCIPAL ===== */
+.tickets-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.header {
-    display: flex;
-    align-items: center; /* Centra verticalmente el logo y el título */
-    justify-content: center; /* Centra horizontalmente el contenido */
-    gap: 10px; /* Espaciado entre el logo y el título */
-}
-/* Logo */
-.app-logo {
-    margin-bottom: 0px; /* Menor espacio entre logo y contenido */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 10px;
-    background-color: #ffffff;
+/* ===== HEADER ===== */
+.tickets-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
 }
 
-.app-logo img {
-    max-width: 150px; /* Tamaño del logo ajustado */
-    height: auto;
-    display: block;
+.logo-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-/* Encabezado */
-h1 {
-    font-size: 2rem;
-    color: #139b2d;
-    text-align: center;
-    margin-bottom: 10px;
+.logo-title img {
+  height: 50px;
+  width: auto;
 }
 
-p {
-    font-size: 1.1rem;
-    color: #117b24;
-    text-align: center;
+.logo-title h1 {
+  color: #139b2d;
+  font-size: 1.8rem;
+  margin: 0;
 }
 
-/* Tabla del historial */
+/* ===== BOTONES ===== */
+.btn-back,
+.btn-danger,
+.btn {
+  background-color: #139b2d;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 10px 16px;
+  transition: all 0.3s ease;
+}
+
+.btn-back {
+  background-color: #3498db;
+}
+
+.btn-danger {
+  background-color: #e74c3c;
+  margin-top: 10px;
+}
+
+.btn:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+/* ===== SECCIÓN PRINCIPAL ===== */
+.tickets-main {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.tickets-section h2 {
+  color: #139b2d;
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+}
+
+/* ===== TABLA ===== */
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
 .ticket-history {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+  background: #fff;
 }
 
 .ticket-history th, .ticket-history td {
-    border: 1px solid #ddd;
-    padding: 12px;
-    text-align: center;
-    font-size: 1rem;
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: center;
 }
 
 .ticket-history th {
-    background-color: #139b2d;
-    color: #ffffff;
-    border-radius: 6px;
+  background-color: #139b2d;
+  color: white;
 }
 
 .ticket-history tr:nth-child(even) {
-    background-color: #f2f2f2;
+  background-color: #f2f2f2;
 }
 
 .ticket-history tr:hover {
-    background-color: #ddd;
+  background-color: #e6f4ea;
 }
 
-/* Botones */
-button {
-    padding: 8px 16px;
-    background-color: #139b2d;
-    color: #ffffff;
-    font-size: 0.9rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease-in-out;
-    margin-top: 10px;
+/* ===== TOASTS Y MODAL ===== */
+.toast-container {
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  z-index: 99999;
 }
 
-button:hover {
-    background-color: #117b24;
+.toast {
+  margin-bottom: 8px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
-button:active {
-    background-color: #0f5e1c;
+.toast.success { background: #27ae60; }
+.toast.error { background: #e74c3c; }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
 }
 
-/* Contenedor del historial */
-.container-historial {
-    width: 100%;
-    text-align: center;
-    padding: 20px;
+.modal-card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
 }
 
-/* Responsividad */
+.modal-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.modal-text {
+  margin-top: 8px;
+  color: #333;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* ===== RESPONSIVIDAD ===== */
 @media (max-width: 768px) {
-    .container {
-        padding: 20px;
-    }
+  .logo-title h1 {
+    font-size: 1.4rem;
+  }
 
-    h1 {
-        font-size: 1.8rem;
-    }
+  .ticket-history th, .ticket-history td {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
 
-    .ticket-history th, .ticket-history td {
-        font-size: 0.9rem;
-        padding: 8px;
-    }
-
-    button {
-        font-size: 0.9rem;
-        padding: 8px 16px;
-    }
+  .btn {
+    font-size: 0.9rem;
+  }
 }
 
 @media (max-width: 480px) {
-    h1 {
-        font-size: 1.5rem;
-    }
+  .tickets-header {
+    flex-direction: column;
+    text-align: center;
+  }
 
-    .ticket-history th, .ticket-history td {
-        font-size: 0.8rem;
-        padding: 6px;
-    }
+  .logo-title {
+    justify-content: center;
+  }
 
-    button {
-        font-size: 0.8rem;
-        padding: 6px 12px;
-    }
+  .logo-title h1 {
+    font-size: 1.2rem;
+  }
 
-    .app-logo img {
-        max-width: 120px; /* Reducción en dispositivos pequeños */
-    }
+  .btn-back {
+    width: 100%;
+  }
+
+  .ticket-history th, .ticket-history td {
+    font-size: 0.8rem;
+    padding: 6px;
+  }
+
+  .btn-danger {
+    width: 100%;
+  }
 }

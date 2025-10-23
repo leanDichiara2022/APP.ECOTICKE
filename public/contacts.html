@@ -1,83 +1,34 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Contactos</title>
-    <link rel="stylesheet" href="/css/contacts.css">
-    <style>
-      /* Header simple para alinear logo + botón volver */
-      .contacts-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 18px;
-      }
-      .app-logo img {
-        height: 56px;
-        display: block;
-      }
-      /* Si ya tenés una clase .btn-historial o .btn en tu CSS, la usará.
-         En caso de no existir, este estilo asegura apariencia básica. */
-      .btn-back {
-        padding: 8px 12px;
-        border-radius: 8px;
-        border: none;
-        background: #007bff;
-        color: #fff;
-        text-decoration: none;
-        font-weight: 600;
-        display: inline-block;
-      }
-      .btn-back:hover {
-        opacity: 0.95;
-      }
-      /* Respetar el diseño del main */
-      main.container-historial {
-        max-width: 980px;
-        margin: 0 auto;
-        padding: 12px;
-      }
-      .search-box {
-        display:flex;
-        gap:8px;
-        margin-top:12px;
-      }
-      #searchInput {
-        flex:1;
-        padding:8px;
-        border-radius:6px;
-        border:1px solid #ccc;
-      }
-      .result-container {
-        margin-top:12px;
-      }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Contactos</title>
+  <link rel="stylesheet" href="/css/contacts.css" />
+  <script src="/js/contacts-client.js" defer></script>
 </head>
 <body>
-    <header class="contacts-header" role="banner">
-      <div class="app-logo">
-        <a href="/"><img src="/images/TickECO-Photoroom.png" alt="Logo"></a>
+  <div class="contacts-container">
+    <header class="contacts-header">
+      <div class="logo-title">
+        <a href="/">
+          <img src="/images/TickECO-Photoroom.png" alt="Logo de la aplicación" />
+        </a>
+        <h1>Gestión de Contactos</h1>
       </div>
-
-      <!-- Botón Volver al main (requerido) -->
-      <a href="/main.html" id="backToMainBtn" class="btn-back" aria-label="Volver al panel principal" data-i18n="button_back">
-        Volver
-      </a>
+      <button onclick="window.location.href='/main.html'" class="btn-back">⬅ Volver atrás</button>
     </header>
 
-    <main class="container-historial">
-        <h1>Gestión de Contactos</h1>
-        <p>Aquí puedes administrar tus contactos.</p>
+    <main class="contacts-main">
+      <p>Aquí puedes administrar y buscar tus contactos registrados.</p>
 
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Buscar por celular o correo...">
-            <button onclick="searchContact()">Buscar</button>
-        </div>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Buscar por celular o correo..." />
+        <button id="searchBtn" onclick="searchContact()">Buscar</button>
+      </div>
 
-        <div id="searchResult" class="result-container"></div>
+      <div id="searchResult" class="result-container"></div>
     </main>
-
-    <script src="/js/contacts-client.js" defer></script>
+  </div>
 </body>
 </html>

@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
   const loginForm = document.getElementById("loginForm");
+  const message = document.getElementById("loginMessage");
 
   // Generar o recuperar deviceId único
   let deviceId = localStorage.getItem("deviceId");
@@ -15,12 +16,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const password = document.getElementById("password").value.trim();
 
     if (!email || !password) {
-      alert("Por favor, completa todos los campos.");
+      if (message) {
+        message.textContent = "Por favor, completa todos los campos.";
+        message.className = "message error";
+      } else {
+        alert("Por favor, completa todos los campos.");
+      }
       return;
     }
 
     try {
-      // ✅ ruta corregida
       const response = await fetch("/api/usuarios/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -30,13 +35,34 @@ document.addEventListener("DOMContentLoaded", function () {
       const result = await response.json();
 
       if (response.ok) {
-        window.location.href = "/main"; // 👈 corregido (server.js sirve /main, no /main.html)
+        // Guardar token y usuario
+        localStorage.setItem("token", result.token);
+        localStorage.setItem("user", JSON.stringify(result.user));
+
+        if (message) {
+          message.textContent = "Inicio de sesión exitoso. Redirigiendo...";
+          message.className = "message success";
+        }
+
+        setTimeout(() => {
+          window.location.href = "main.html";
+        }, 1200);
       } else {
-        alert(result.message || "Error al iniciar sesión.");
+        if (message) {
+          message.textContent = result.message || "Error al iniciar sesión.";
+          message.className = "message error";
+        } else {
+          alert(result.message || "Error al iniciar sesión.");
+        }
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Hubo un error al conectar con el servidor.");
+      if (message) {
+        message.textContent = "Hubo un error al conectar con el servidor.";
+        message.className = "message error";
+      } else {
+        alert("Hubo un error al conectar con el servidor.");
+      }
     }
   });
 });

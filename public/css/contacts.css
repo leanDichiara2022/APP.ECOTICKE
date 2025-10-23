@@ -1,65 +1,167 @@
-/* Estilo general */
+/* ===== ESTILO GENERAL ===== */
 body {
-    margin: 0;
-    padding: 0;
-    font-family: Georgia, 'Times New Roman', Times, serif;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: #ffffff;
-    overflow: hidden; /* Para evitar scroll */
+  margin: 0;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  background-color: #ffffff;
+  color: #222;
 }
 
-.app-logo img {
-    max-width: 120px;
-    height: auto;
+/* ===== CONTENEDOR PRINCIPAL ===== */
+.contacts-container {
+  width: 100%;
+  max-width: 1000px;
+  margin: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.container-historial {
-    width: 90%;
-    max-width: 500px;
-    text-align: center;
-    background: #f9f9f9;
-    padding: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    overflow: hidden;
+/* ===== HEADER ===== */
+.contacts-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
 }
 
-h1 {
-    font-size: 2rem;
-    color: #139b2d;
+.logo-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-p {
-    font-size: 1rem;
-    color: #333;
+.logo-title img {
+  height: 50px;
+  width: auto;
 }
 
-/* Responsividad */
+.logo-title h1 {
+  color: #139b2d;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+/* ===== BOTÓN VOLVER ===== */
+.btn-back {
+  background-color: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 10px 16px;
+  transition: all 0.3s ease;
+}
+
+.btn-back:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+/* ===== CONTENIDO PRINCIPAL ===== */
+.contacts-main {
+  background: #f9f9f9;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.contacts-main p {
+  font-size: 1.05rem;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+/* ===== BUSCADOR ===== */
+.search-box {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.search-box input {
+  flex: 1;
+  min-width: 240px;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+.search-box button {
+  background-color: #139b2d;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.search-box button:hover {
+  background-color: #117b24;
+}
+
+/* ===== RESULTADOS ===== */
+.result-container {
+  margin-top: 20px;
+  text-align: left;
+  word-wrap: break-word;
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+  min-height: 60px;
+}
+
+/* ===== RESPONSIVIDAD ===== */
 @media (max-width: 768px) {
-    h1 {
-        font-size: 1.8rem;
-    }
+  .logo-title h1 {
+    font-size: 1.5rem;
+  }
 
-    .container-historial {
-        padding: 15px;
-    }
+  .btn-back {
+    font-size: 0.9rem;
+  }
+
+  .contacts-main {
+    padding: 20px;
+  }
+
+  .search-box input {
+    font-size: 0.95rem;
+  }
 }
 
 @media (max-width: 480px) {
-    h1 {
-        font-size: 1.5rem;
-    }
+  .contacts-header {
+    flex-direction: column;
+    text-align: center;
+  }
 
-    p {
-        font-size: 0.9rem;
-    }
+  .logo-title {
+    justify-content: center;
+  }
 
-    .container-historial {
-        width: 100%;
-        padding: 10px;
-    }
+  .logo-title h1 {
+    font-size: 1.3rem;
+  }
+
+  .btn-back {
+    width: 100%;
+  }
+
+  .search-box {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box button {
+    width: 100%;
+  }
 }

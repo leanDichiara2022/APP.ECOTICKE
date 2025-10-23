@@ -1,139 +1,63 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title data-i18n="register_title">Registro - Mi Aplicación</title>
-    <link href="https://fonts.googleapis.com/css?family=Dosis:400,700" rel="stylesheet" />
-    <link rel="stylesheet" href="css/register.css" />
-    <style>
-        .back-btn {
-            display: inline-block;
-            margin-top: 15px;
-            padding: 10px 16px;
-            background: #3498db;
-            color: #fff;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: background 0.3s;
-        }
-        .back-btn:hover {
-            background: #2980b9;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title data-i18n="register_title">Registro - TickECO</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Dosis:400,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/register.css" />
 </head>
 <body>
-    <div class="language-selector">
-        <select id="languageSwitcher">
-            <option value="es">Español</option>
-            <option value="en">English</option>
-        </select>
-    </div>
-
+  <header class="app-header">
     <div class="app-logo">
-        <a href="/"><img src="./images/TickECO-Photoroom.png" alt="Logo"></a>
+      <a href="/"><img src="/images/TickECO-Photoroom.png" alt="Logo de TickECO" /></a>
     </div>
-
-    <div class="register-container">
-        <h1 data-i18n="create_account">Crear Cuenta</h1>
-        <form id="registerForm">
-            <div>
-                <label for="name" data-i18n="full_name">Nombre Completo:</label>
-                <input type="text" id="name" placeholder="Ingrese su nombre completo" required />
-            </div>
-            <div>
-                <label for="email" data-i18n="email">Correo Electrónico:</label>
-                <input type="email" id="email" placeholder="Ingrese su correo" required />
-            </div>
-            <div>
-                <label for="password" data-i18n="password">Contraseña:</label>
-                <input type="password" id="password" placeholder="Crea una contraseña" required />
-            </div>
-            <div>
-                <label for="confirmPassword" data-i18n="confirm_password">Confirmar Contraseña:</label>
-                <input type="password" id="confirmPassword" placeholder="Repita su contraseña" required />
-            </div>
-            <button type="submit" data-i18n="register_button">Registrarse</button>
-        </form>
-        <p data-i18n="already_have_account">¿Ya tienes una cuenta? <a href="login.html" data-i18n="login_here">Inicia sesión aquí</a></p>
-        <p id="registerMessage" class="message"></p>
-
-        <!-- 🔹 Botón de volver al inicio -->
-        <a href="index.html" class="back-btn">⬅ Volver al Inicio</a>
+    <div class="language-selector">
+      <select id="languageSwitcher">
+        <option value="es">Español</option>
+        <option value="en">English</option>
+      </select>
     </div>
+  </header>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const registerForm = document.getElementById('registerForm');
-            const registerMessage = document.getElementById('registerMessage');
+  <main class="register-container">
+    <h1 data-i18n="create_account">Crear Cuenta</h1>
 
-            registerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
+    <form id="registerForm" autocomplete="on">
+      <div class="form-group">
+        <label for="name" data-i18n="full_name">Nombre Completo</label>
+        <input type="text" id="name" placeholder="Ingrese su nombre completo" required />
+      </div>
 
-                const name = document.getElementById('name').value.trim();
-                const email = document.getElementById('email').value.trim();
-                const password = document.getElementById('password').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
+      <div class="form-group">
+        <label for="email" data-i18n="email">Correo Electrónico</label>
+        <input type="email" id="email" placeholder="Ingrese su correo" required />
+      </div>
 
-                if (!name) {
-                    registerMessage.textContent = 'Por favor, ingresa tu nombre completo.';
-                    registerMessage.classList.add('error');
-                    return;
-                }
+      <div class="form-group">
+        <label for="password" data-i18n="password">Contraseña</label>
+        <input type="password" id="password" placeholder="Crea una contraseña" required />
+      </div>
 
-                if (!email || !email.includes('@')) {
-                    registerMessage.textContent = 'Por favor, ingresa un correo electrónico válido.';
-                    registerMessage.classList.add('error');
-                    return;
-                }
+      <div class="form-group">
+        <label for="confirmPassword" data-i18n="confirm_password">Confirmar Contraseña</label>
+        <input type="password" id="confirmPassword" placeholder="Repita su contraseña" required />
+      </div>
 
-                if (password.length < 6) {
-                    registerMessage.textContent = 'La contraseña debe tener al menos 6 caracteres.';
-                    registerMessage.classList.add('error');
-                    return;
-                }
+      <button type="submit" data-i18n="register_button">Registrarse</button>
+    </form>
 
-                if (password !== confirmPassword) {
-                    registerMessage.textContent = 'Las contraseñas no coinciden.';
-                    registerMessage.classList.add('error');
-                    return;
-                }
+    <p data-i18n="already_have_account">
+      ¿Ya tienes una cuenta? <a href="login.html" data-i18n="login_here">Inicia sesión aquí</a>
+    </p>
 
-                try {
-                    const response = await fetch('/api/usuarios/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ nombre: name, email, password }),
-                    });
+    <p id="registerMessage" class="message"></p>
 
-                    const data = await response.json();
-                    if (response.ok) {
-                        registerMessage.textContent = data.message;
-                        registerMessage.classList.remove('error');
-                        registerMessage.classList.add('success');
-                        setTimeout(() => {
-                            window.location.href = "login.html";
-                        }, 1500);
-                    } else {
-                        registerMessage.textContent = data.message || 'Error en el registro.';
-                        registerMessage.classList.add('error');
-                    }
-                } catch (error) {
-                    console.error('Error durante el registro:', error);
-                    registerMessage.textContent = 'Hubo un error. Inténtalo más tarde.';
-                    registerMessage.classList.add('error');
-                }
-            });
+    <a href="index.html" class="back-btn">⬅ Volver al Inicio</a>
+  </main>
 
-            const languageSwitcher = document.getElementById('languageSwitcher');
-            languageSwitcher.addEventListener('change', (e) => {
-                const selectedLang = e.target.value;
-                localStorage.setItem('selectedLanguage', selectedLang);
-                location.reload();
-            });
-        });
-    </script>
+  <script src="/js/register.js" defer></script>
 </body>
 </html>

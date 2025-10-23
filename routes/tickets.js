@@ -2,7 +2,7 @@ const express = require("express");
 const path = require("path");
 const fs = require("fs");
 const PDFDocument = require("pdfkit");
-const Ticket = require("../models/ticket");
+const Ticket = require("../models/Ticket");
 const auth = require("../middleware/auth");
 const logger = require("../utils/logger");
 

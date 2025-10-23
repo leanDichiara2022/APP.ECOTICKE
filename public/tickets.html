@@ -6,63 +6,49 @@
   <title>Gestión de Tickets</title>
   <link rel="stylesheet" href="/css/tickets.css" />
   <script src="/scripts/scripts.js" defer></script>
-  <style>
-    /* Estilos mínimos para los toasts y modal de borrado masivo (si no existen en tu CSS) */
-    .toast-container { position: fixed; right: 16px; top: 16px; z-index: 99999; }
-    .toast { margin-bottom: 8px; padding: 8px 12px; border-radius: 6px; color: #fff; font-weight:600; box-shadow:0 2px 6px rgba(0,0,0,0.15); }
-    .toast.success { background:#27ae60; } .toast.error { background:#e74c3c; }
-    /* Modal simple */
-    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:100000; }
-    .modal-card { background:#fff; padding:18px; border-radius:10px; width:90%; max-width:420px; box-shadow:0 6px 20px rgba(0,0,0,0.25); }
-    .modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
-    .btn { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; }
-    .btn.cancel { background:#bdc3c7; color:#111; } .btn.danger { background:#e74c3c; color:#fff; }
-    /* Botón volver */
-    .btn-back { background:#3498db; color:#fff; margin-left:16px; }
-  </style>
 </head>
 <body>
-
-  <div class="container-historial">
-    <header style="display:flex; align-items:center; gap:16px;">
-      <div class="app-logo">
-        <a href="/"><img src="./images/TickECO-Photoroom.png" alt="Logo de la aplicación" style="height:48px;"></a>
+  <div class="tickets-container">
+    <header class="tickets-header">
+      <div class="logo-title">
+        <a href="/">
+          <img src="./images/TickECO-Photoroom.png" alt="Logo" />
+        </a>
+        <h1>Gestión y Historial de Tickets</h1>
       </div>
-      <h1 style="flex:1;">Gestión y Historial de Tickets</h1>
-      <button onclick="window.location.href='/main.html'" class="btn btn-back">⬅ Volver atrás</button>
+      <button onclick="window.location.href='/main.html'" class="btn-back">⬅ Volver atrás</button>
     </header>
 
-    <main class="main-content">
-      <section class="ticket-history-section">
+    <main class="tickets-main">
+      <section class="tickets-section">
         <h2>Historial de Tickets</h2>
 
-        <table class="ticket-history">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Destinatario</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="ticketHistoryTable">
-            <!-- Los registros de tickets aparecerán aquí dinámicamente (scripts.js se encarga) -->
-          </tbody>
-        </table>
+        <div class="table-container">
+          <table class="ticket-history">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Destinatario</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="ticketHistoryTable">
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
 
-        <button id="clearHistory" class="btn danger">Borrar Historial</button>
+        <button id="clearHistory" class="btn-danger">🗑 Borrar Historial</button>
       </section>
     </main>
   </div>
 
-  <!-- Contenedor de notificaciones flotantes -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <!-- Script pequeño local: maneja "Borrar todo el historial" sin alerts -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const clearBtn = document.getElementById('clearHistory');
-      const tableBody = document.getElementById('ticketHistoryTable');
       const toastContainer = document.getElementById('toastContainer');
 
       const showInlineToast = (msg, type = 'success', time = 2500) => {
@@ -73,51 +59,36 @@
         setTimeout(() => t.remove(), time);
       };
 
-      // Modal genérico de confirmación
       const openConfirmModal = ({ title = "Confirmar", text = "¿Estás seguro?", confirmText = "Aceptar", cancelText = "Cancelar" }) => {
         return new Promise((resolve) => {
           const overlay = document.createElement('div');
           overlay.className = 'modal-overlay';
-
           overlay.innerHTML = `
             <div class="modal-card">
-              <div style="font-weight:700; font-size:1.05rem;">${title}</div>
-              <div style="margin-top:8px; color:#333;">${text}</div>
+              <div class="modal-title">${title}</div>
+              <div class="modal-text">${text}</div>
               <div class="modal-actions">
                 <button class="btn cancel">${cancelText}</button>
                 <button class="btn danger">${confirmText}</button>
               </div>
-            </div>
-          `;
+            </div>`;
           document.body.appendChild(overlay);
-
-          overlay.querySelector('.btn.cancel').addEventListener('click', () => {
-            overlay.remove();
-            resolve(false);
-          });
-          overlay.querySelector('.btn.danger').addEventListener('click', () => {
-            overlay.remove();
-            resolve(true);
-          });
+          overlay.querySelector('.btn.cancel').addEventListener('click', () => { overlay.remove(); resolve(false); });
+          overlay.querySelector('.btn.danger').addEventListener('click', () => { overlay.remove(); resolve(true); });
         });
       };
 
       async function clearAllHistory() {
         try {
           const res = await fetch('/api/history/data');
-          if (!res.ok) {
-            showInlineToast('No se pudo obtener el historial.', 'error');
-            return;
-          }
+          if (!res.ok) return showInlineToast('No se pudo obtener el historial.', 'error');
           const list = await res.json();
-          if (!Array.isArray(list) || list.length === 0) {
-            showInlineToast('No hay tickets para eliminar.', 'error');
-            return;
-          }
+          if (!Array.isArray(list) || list.length === 0)
+            return showInlineToast('No hay tickets para eliminar.', 'error');
 
           const confirmed = await openConfirmModal({
             title: 'Borrar todo el historial',
-            text: `Se van a eliminar ${list.length} registros. Esta acción no se puede deshacer.`,
+            text: `Se eliminarán ${list.length} registros. Esta acción no se puede deshacer.`,
             confirmText: 'Borrar todo',
             cancelText: 'Cancelar'
           });
@@ -125,31 +96,18 @@
 
           const deletes = list.map(item => fetch(`/api/history/delete/${item._id}`, { method: 'DELETE' }));
           const results = await Promise.all(deletes);
-
           const okCount = results.filter(r => r.ok).length;
           showInlineToast(`${okCount} de ${list.length} registros eliminados.`, 'success');
-
-          if (typeof window.fetchHistory === 'function') {
-            window.fetchHistory();
-          } else {
-            setTimeout(() => location.reload(), 800);
-          }
+          if (typeof window.fetchHistory === 'function') window.fetchHistory();
+          else setTimeout(() => location.reload(), 800);
         } catch (err) {
-          console.error('Error borrando historial:', err);
-          showInlineToast('Error borrando historial. Revisa la consola.', 'error');
+          console.error('Error:', err);
+          showInlineToast('Error borrando historial.', 'error');
         }
       }
 
-      if (clearBtn) {
-        clearBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          clearAllHistory();
-        });
-      }
-
-      if (typeof window.fetchHistory === 'function') {
-        window.fetchHistory();
-      }
+      if (clearBtn) clearBtn.addEventListener('click', (e) => { e.preventDefault(); clearAllHistory(); });
+      if (typeof window.fetchHistory === 'function') window.fetchHistory();
     });
   </script>
 </body>

@@ -270,4 +270,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // =====================================================
   // 🔒 Logout
- 
+  // =====================================================
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      localStorage.clear();
+      showToast("👋 Sesión cerrada correctamente", "success");
+      setTimeout(() => window.location.href = "/login.html", 1000);
+    });
+  }
+
+  // =====================================================
+  // 🔔 Función Toast Global
+  // =====================================================
+  function showToast(message, type = "info") {
+    const toast = document.createElement("div");
+    toast.textContent = message;
+    toast.style.position = "fixed";
+    toast.style.bottom = "20px";
+    toast.style.right = "20px";
+    toast.style.padding = "10px 15px";
+    toast.style.color = "#fff";
+    toast.style.borderRadius = "6px";
+    toast.style.fontSize = "14px";
+    toast.style.zIndex = "9999";
+    toast.style.background = type === "success" ? "#4caf50" :
+                             type === "error" ? "#f44336" :
+                             "#2196f3";
+    toast.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+});
