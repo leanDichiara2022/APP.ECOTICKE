@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       // ✅ Ruta correcta (sin /api/usuarios)
-      const response = await fetch("/register", {
+      const response = await fetch("/api/usuarios/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nombre, email, password, deviceId }),

@@ -1,4 +1,3 @@
-// server.js
 require("dotenv").config();
 const express = require("express");
 const fs = require("fs");
@@ -10,15 +9,14 @@ const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 const session = require("express-session");
 
+// Inicializar app
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const isProduction = process.env.NODE_ENV === "production";
 
-// Middleware base
+// Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// 🌍 CORS - permitir dominio y localhost para pruebas
 app.use(
   cors({
     origin: [
@@ -30,31 +28,27 @@ app.use(
     credentials: true,
   })
 );
-
-// 🛡️ Helmet: desactivar CSP por defecto porque rompía inline scripts/styles locales
 app.use(
   helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
   })
 );
-
-// 📜 Logs HTTP
 app.use(morgan("combined"));
 
-// 🧱 Rate limiter
+// Rate limiter
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 15 * 60 * 1000,
   max: 500,
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use(limiter);
 
-// ✅ Ajuste seguro de proxy (corrige el error que viste)
-app.set("trust proxy", 1); // confía solo en Nginx, no en todas las IPs
+// Trust proxy seguro
+app.set("trust proxy", 1);
 
-// 🔐 Sesiones
+// Sesiones
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "clave_super_segura",
@@ -68,63 +62,40 @@ app.use(
   })
 );
 
-// 🧩 Conexión a MongoDB
-if (!process.env.MONGO_URI) {
-  console.warn("⚠️ MONGO_URI no definido en .env — la app intentará iniciar pero sin BD.");
-}
+// MongoDB
 mongoose
   .connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ecoticke")
   .then(() => console.log("✅ MongoDB conectado correctamente"))
-  .catch((err) => console.error("❌ Error al conectar a MongoDB:", err.message || err));
+  .catch((err) => console.error("❌ Error al conectar a MongoDB:", err.message));
 
-// 📂 Archivos estáticos
+// Archivos estáticos
 const publicPath = path.join(__dirname, "public");
 app.use(express.static(publicPath));
 
-// 🧭 Rutas HTML principales
+// Rutas HTML
 app.get("/", (req, res) => res.sendFile(path.join(publicPath, "index.html")));
 app.get("/register", (req, res) => res.sendFile(path.join(publicPath, "register.html")));
 app.get("/login", (req, res) => res.sendFile(path.join(publicPath, "login.html")));
 app.get("/main", (req, res) => res.sendFile(path.join(publicPath, "main.html")));
 
-// 🔄 Cargar rutas dinámicamente desde /routes
-const routesPath = path.join(__dirname, "routes");
-if (fs.existsSync(routesPath)) {
-  fs.readdirSync(routesPath).forEach((file) => {
-    if (!file.endsWith(".js")) return;
-    const routePath = path.join(routesPath, file);
-    try {
-      const router = require(routePath);
-      const name = path.basename(file, ".js");
-
-      // Usuarios → /api/usuarios
-      if (["usuarios", "userRoutes", "user"].includes(name)) {
-        app.use("/api/usuarios", router);
-        console.log(`📡 Mounted route ${file} -> /api/usuarios`);
-        return;
-      }
-
-      // Otros routes
-      app.use(`/${name}`, router);
-      console.log(`📡 Mounted route ${file} -> /${name}`);
-    } catch (err) {
-      console.error(`❌ Error cargando route ${file}:`, err.message || err);
-    }
-  });
-} else {
-  console.warn("⚠️ No se encontró la carpeta 'routes'. Verifica la estructura del proyecto.");
+// 🔹 Rutas explícitas
+try {
+  app.use("/api/usuarios", require("./routes/usuarios"));
+  app.use("/api/tickets", require("./routes/tickets"));
+  app.use("/api/contacts", require("./routes/contacts"));
+  app.use("/mercadopago", require("./routes/mercadopago"));
+  app.use("/paypal", require("./routes/paypal"));
+  console.log("📡 Todas las rutas montadas correctamente");
+} catch (err) {
+  console.error("❌ Error cargando rutas:", err.message);
 }
 
-// 🩺 Health check
+// Health check
 app.get("/health", (req, res) => res.json({ status: "ok", time: new Date().toISOString() }));
 
-// 🧱 Fallback 404
+// Fallback 404
 app.use((req, res, next) => {
-  if (
-    req.path.startsWith("/api/") ||
-    req.path.startsWith("/usuarios") ||
-    req.path.startsWith("/register")
-  ) {
+  if (req.path.startsWith("/api/") || req.path.startsWith("/usuarios") || req.path.startsWith("/register")) {
     return res.status(404).json({ message: "Endpoint no encontrado" });
   }
   res.status(404).sendFile(path.join(publicPath, "404.html"), (err) => {
@@ -132,7 +103,7 @@ app.use((req, res, next) => {
   });
 });
 
-// 🚀 Iniciar servidor HTTP (Nginx gestiona TLS)
+// Iniciar servidor
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Servidor HTTP corriendo en http://0.0.0.0:${PORT} (usa Nginx para TLS)`);
 });
