@@ -1,108 +1,96 @@
-// i18n.js - Sistema de traducciones global
 document.addEventListener("DOMContentLoaded", () => {
+  // Idioma base
+  const defaultLang = "es";
+  const savedLang = localStorage.getItem("language") || defaultLang;
+  let currentLang = savedLang;
+
   const translations = {
     es: {
-      title: "Panel de Tickets",
-      main_heading: "Panel de Envío de Tickets",
-      language_label: "Idioma:",
-      logout_button: "Cerrar sesión",
-      upload_heading: "Subir archivo (se convierte a PDF si es necesario)",
-      upload_button: "Subir y convertir",
-      template_heading: "Elegir Plantilla",
-      template_label: "Selecciona una plantilla predefinida:",
-      template_custom_label: "O subir tu propia plantilla:",
-      label_country: "Código País:",
-      label_phone: "WhatsApp:",
-      label_email: "Correo Electrónico:",
-      label_extra: "Detalles Extra:",
-      button_search: "Buscar Cliente",
-      button_history: "Ver Historial",
-      plan_personal_title: "Plan Personal",
-      plan_personal_desc: "Para uso individual",
-      plan_personal_price: "Gratis el primer mes",
-      plan_business_title: "Plan Empresarial",
-      plan_business_desc: "Ideal para negocios",
-      plan_business_price: "$2 USD / equipo + soporte",
-      button_subscribe: "Suscribirme",
-      button_contact: "Contactar",
-      footer_rights: "© 2025 Tu Empresa. Todos los derechos reservados."
+      welcome_title: "Bienvenido - TickECO",
+      welcome: "Bienvenido",
+      register: "Registrarse",
+      login: "Iniciar Sesión",
+      register_title: "Registro - TickECO",
+      login_title: "Inicio de Sesión - TickECO",
+      create_account: "Crear Cuenta",
+      full_name: "Nombre Completo",
+      email: "Correo Electrónico",
+      password: "Contraseña",
+      confirm_password: "Confirmar Contraseña",
+      register_button: "Registrarse",
+      already_have_account: "¿Ya tienes una cuenta?",
+      login_here: "Inicia sesión aquí",
+      login_heading: "Inicia Sesión",
+      login_button: "Iniciar Sesión",
+      no_account: "¿No tienes una cuenta?",
+      register_here: "Regístrate aquí",
+      back_home: "⬅ Volver al Inicio"
     },
     en: {
-      title: "Tickets Panel",
-      main_heading: "Ticket Sending Panel",
-      language_label: "Language:",
-      logout_button: "Logout",
-      upload_heading: "Upload file (will convert to PDF if needed)",
-      upload_button: "Upload & Convert",
-      template_heading: "Choose Template",
-      template_label: "Select a predefined template:",
-      template_custom_label: "Or upload your own template:",
-      label_country: "Country Code:",
-      label_phone: "WhatsApp:",
-      label_email: "Email:",
-      label_extra: "Extra Details:",
-      button_search: "Search Client",
-      button_history: "View History",
-      plan_personal_title: "Personal Plan",
-      plan_personal_desc: "For individual use",
-      plan_personal_price: "First month free",
-      plan_business_title: "Business Plan",
-      plan_business_desc: "Ideal for businesses",
-      plan_business_price: "$2 USD / device + support",
-      button_subscribe: "Subscribe",
-      button_contact: "Contact",
-      footer_rights: "© 2025 Your Company. All rights reserved."
+      welcome_title: "Welcome - TickECO",
+      welcome: "Welcome",
+      register: "Register",
+      login: "Log In",
+      register_title: "Register - TickECO",
+      login_title: "Login - TickECO",
+      create_account: "Create Account",
+      full_name: "Full Name",
+      email: "Email",
+      password: "Password",
+      confirm_password: "Confirm Password",
+      register_button: "Register",
+      already_have_account: "Already have an account?",
+      login_here: "Log in here",
+      login_heading: "Log In",
+      login_button: "Log In",
+      no_account: "Don't have an account?",
+      register_here: "Register here",
+      back_home: "⬅ Back to Home"
     },
     pt: {
-      title: "Painel de Tickets",
-      main_heading: "Painel de Envio de Tickets",
-      language_label: "Idioma:",
-      logout_button: "Sair",
-      upload_heading: "Enviar arquivo (será convertido para PDF se necessário)",
-      upload_button: "Enviar e Converter",
-      template_heading: "Escolher Modelo",
-      template_label: "Selecione um modelo predefinido:",
-      template_custom_label: "Ou envie seu próprio modelo:",
-      label_country: "Código do País:",
-      label_phone: "WhatsApp:",
-      label_email: "Email:",
-      label_extra: "Detalhes Extras:",
-      button_search: "Buscar Cliente",
-      button_history: "Ver Histórico",
-      plan_personal_title: "Plano Pessoal",
-      plan_personal_desc: "Para uso individual",
-      plan_personal_price: "Primeiro mês grátis",
-      plan_business_title: "Plano Empresarial",
-      plan_business_desc: "Ideal para negócios",
-      plan_business_price: "$2 USD / dispositivo + suporte",
-      button_subscribe: "Assinar",
-      button_contact: "Contato",
-      footer_rights: "© 2025 Sua Empresa. Todos os direitos reservados."
+      welcome_title: "Bem-vindo - TickECO",
+      welcome: "Bem-vindo",
+      register: "Registrar-se",
+      login: "Entrar",
+      register_title: "Registro - TickECO",
+      login_title: "Login - TickECO",
+      create_account: "Criar Conta",
+      full_name: "Nome Completo",
+      email: "Email",
+      password: "Senha",
+      confirm_password: "Confirmar Senha",
+      register_button: "Registrar-se",
+      already_have_account: "Já tem uma conta?",
+      login_here: "Entre aqui",
+      login_heading: "Entrar",
+      login_button: "Entrar",
+      no_account: "Não tem uma conta?",
+      register_here: "Registre-se aqui",
+      back_home: "⬅ Voltar ao Início"
     }
   };
 
-  const languageSelector = document.getElementById("language");
-  let currentLang = localStorage.getItem("language") || "es";
-
-  function applyTranslations(lang) {
-    document.querySelectorAll("[data-i18n]").forEach((el) => {
-      const key = el.getAttribute("data-i18n");
-      if (translations[lang] && translations[lang][key]) {
-        el.textContent = translations[lang][key];
-      }
+  // Aplicar traducciones según el idioma actual
+  const applyTranslations = () => {
+    document.querySelectorAll("[data-translate]").forEach(el => {
+      const key = el.getAttribute("data-translate");
+      if (translations[currentLang][key]) el.textContent = translations[currentLang][key];
     });
-    document.title = translations[lang].title || document.title;
-  }
 
-  applyTranslations(currentLang);
+    document.title = translations[currentLang].welcome_title || document.title;
+  };
 
-  if (languageSelector) {
-    languageSelector.value = currentLang;
+  // Aplicar al cargar
+  applyTranslations();
 
-    languageSelector.addEventListener("change", (e) => {
-      const selectedLang = e.target.value;
-      localStorage.setItem("language", selectedLang);
-      applyTranslations(selectedLang);
+  // Cambiar idioma en index.html
+  const langSelector = document.getElementById("language-selector");
+  if (langSelector) {
+    langSelector.value = currentLang;
+    langSelector.addEventListener("change", () => {
+      currentLang = langSelector.value;
+      localStorage.setItem("language", currentLang);
+      applyTranslations();
     });
   }
 });
