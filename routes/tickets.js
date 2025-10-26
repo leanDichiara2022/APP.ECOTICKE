@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const PDFDocument = require("pdfkit");
 const Ticket = require("../models/Ticket");
-const auth = require("../middleware/auth");
+const auth = require("../middlewares/auth");
 const logger = require("../utils/logger");
 
 const router = express.Router();
