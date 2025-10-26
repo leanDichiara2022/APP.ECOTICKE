@@ -68,17 +68,25 @@ mongoose
   .then(() => console.log("✅ MongoDB conectado correctamente"))
   .catch((err) => console.error("❌ Error al conectar a MongoDB:", err.message));
 
-// Archivos estáticos
+// Archivos estáticos públicos
 const publicPath = path.join(__dirname, "public");
 app.use(express.static(publicPath));
 
-// Rutas HTML
+// 🔹 Rutas públicas
 app.get("/", (req, res) => res.sendFile(path.join(publicPath, "index.html")));
 app.get("/register", (req, res) => res.sendFile(path.join(publicPath, "register.html")));
 app.get("/login", (req, res) => res.sendFile(path.join(publicPath, "login.html")));
-app.get("/main", (req, res) => res.sendFile(path.join(publicPath, "main.html")));
 
-// 🔹 Rutas explícitas
+// 🔹 Rutas protegidas (HTML en views/)
+const auth = require("./middleware/auth");
+const viewsPath = path.join(__dirname, "views");
+
+app.get("/main", auth, (req, res) => res.sendFile(path.join(viewsPath, "main.html")));
+app.get("/tickets", auth, (req, res) => res.sendFile(path.join(viewsPath, "tickets.html")));
+app.get("/contacts", auth, (req, res) => res.sendFile(path.join(viewsPath, "contacts.html")));
+app.get("/plans", auth, (req, res) => res.sendFile(path.join(viewsPath, "plans.html")));
+
+// 🔹 Rutas API
 try {
   app.use("/api/usuarios", require("./routes/usuarios"));
   app.use("/api/tickets", require("./routes/tickets"));
