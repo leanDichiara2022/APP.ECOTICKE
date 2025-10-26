@@ -78,7 +78,7 @@ app.get("/register", (req, res) => res.sendFile(path.join(publicPath, "register.
 app.get("/login", (req, res) => res.sendFile(path.join(publicPath, "login.html")));
 
 // 🔹 Rutas protegidas (HTML en views/)
-const auth = require("./middleware/auth");
+const auth = require("./middlewares/auth");
 const viewsPath = path.join(__dirname, "views");
 
 app.get("/main", auth, (req, res) => res.sendFile(path.join(viewsPath, "main.html")));
