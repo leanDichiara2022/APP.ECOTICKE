@@ -14,7 +14,7 @@ const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const isProduction = process.env.NODE_ENV === "production";
 
-// Middlewares
+// Middlewares base
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
@@ -45,7 +45,7 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Trust proxy seguro
+// Trust proxy
 app.set("trust proxy", 1);
 
 // Sesiones
@@ -62,7 +62,7 @@ app.use(
   })
 );
 
-// MongoDB
+// Conexión MongoDB
 mongoose
   .connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ecoticke")
   .then(() => console.log("✅ MongoDB conectado correctamente"))
@@ -72,12 +72,31 @@ mongoose
 const publicPath = path.join(__dirname, "public");
 app.use(express.static(publicPath));
 
+// 🔹 Middleware para aceptar token desde querystring (por si viene en la URL)
+app.use((req, res, next) => {
+  if (req.query.token && !req.headers["x-auth-token"]) {
+    req.headers["x-auth-token"] = req.query.token;
+  }
+  next();
+});
+
+// 🔹 Middleware de redirección global (HTML protegido)
+app.use((req, res, next) => {
+  const token = req.headers["x-auth-token"];
+  const isHtmlRoute = req.path.endsWith(".html") || ["/main", "/tickets", "/contacts", "/plans"].includes(req.path);
+
+  if (isHtmlRoute && !token) {
+    return res.redirect("/login.html");
+  }
+  next();
+});
+
 // 🔹 Rutas públicas
 app.get("/", (req, res) => res.sendFile(path.join(publicPath, "index.html")));
 app.get("/register", (req, res) => res.sendFile(path.join(publicPath, "register.html")));
 app.get("/login", (req, res) => res.sendFile(path.join(publicPath, "login.html")));
 
-// 🔹 Rutas protegidas (HTML en views/)
+// 🔹 Rutas protegidas
 const auth = require("./middlewares/auth");
 const viewsPath = path.join(__dirname, "views");
 

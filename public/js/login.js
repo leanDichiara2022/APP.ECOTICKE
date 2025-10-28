@@ -44,8 +44,10 @@ document.addEventListener("DOMContentLoaded", function () {
           message.className = "message success";
         }
 
+        // Redirigir pasando el token en la URL
         setTimeout(() => {
-          window.location.href = "main.html";
+          const token = result.token;
+          window.location.href = `/main?token=${token}`;
         }, 1200);
       } else {
         if (message) {
