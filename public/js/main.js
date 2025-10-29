@@ -181,92 +181,65 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // =====================================================
-  // 📑 Plantillas con vista previa
+  // 📑 Subida y vista previa de archivos PDF
   // =====================================================
-  const templateSelect = document.getElementById("templateSelect");
-  const customTemplateInput = document.getElementById("customTemplate");
-  const previewBtn = document.getElementById("previewTemplateBtn");
-  const templatePreview = document.getElementById("templatePreview");
-  const usuarioId = localStorage.getItem("usuarioId");
+  const fileInput = document.getElementById("fileInput");
+  const previewContainer = document.getElementById("previewContainer");
 
-  function showTemplatePreview(plantilla) {
-    if (!templatePreview) return;
-    templatePreview.classList.remove("hidden");
-    const url = `/templates/preview/${encodeURIComponent(plantilla)}`;
-    templatePreview.innerHTML = `<iframe src="${url}" style="width:100%;height:480px;border:1px solid #ccc;border-radius:6px;"></iframe>`;
-  }
-
-  if (templateSelect) {
-    templateSelect.addEventListener("change", async () => {
-      showTemplatePreview(templateSelect.value);
-      try {
-        const res = await fetch("/api/templates/set", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ usuarioId, plantilla: templateSelect.value }),
-        });
-        const data = await res.json();
-        if (data.success) showToast(`✅ Plantilla "${templateSelect.value}" guardada`, "success");
-        else showToast("❌ Error al guardar plantilla", "error");
-      } catch (error) {
-        console.error("Error guardando plantilla:", error);
-        showToast("❌ No se pudo guardar la plantilla", "error");
-      }
-    });
-  }
-
-  if (customTemplateInput) {
-    customTemplateInput.addEventListener("change", async (e) => {
+  if (fileInput) {
+    fileInput.addEventListener("change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      templatePreview.classList.remove("hidden");
-      const reader = new FileReader();
-
-      if (file.type === "application/pdf") {
-        reader.onload = ev => templatePreview.innerHTML = `<iframe src="${ev.target.result}" style="width:100%;height:480px;border:1px solid #ccc;border-radius:6px;"></iframe>`;
-        reader.readAsDataURL(file);
-      } else if (file.type === "text/html") {
-        reader.onload = ev => templatePreview.innerHTML = `<iframe srcdoc="${ev.target.result}" style="width:100%;height:480px;border:1px solid #ccc;border-radius:6px;"></iframe>`;
-        reader.readAsText(file);
-      } else {
-        templatePreview.innerHTML = `<p>📂 Plantilla cargada: ${file.name} ✔</p>`;
-      }
-
       const formData = new FormData();
-      formData.append("plantilla", file);
-      formData.append("usuarioId", usuarioId);
+      formData.append("archivo", file);
 
       try {
-        const res = await fetch("/api/pdf/upload-template", { method: "POST", body: formData });
+        const res = await fetch("/api/pdf/upload", {
+          method: "POST",
+          body: formData
+        });
         const data = await res.json();
-        if (data.success) showToast("✅ Plantilla personalizada subida con éxito", "success");
-        else showToast("❌ Error al subir plantilla personalizada", "error");
-      } catch (error) {
-        console.error("Error subiendo plantilla personalizada:", error);
-        showToast("❌ No se pudo subir la plantilla", "error");
+
+        if (res.ok && data.fileName) {
+          localStorage.setItem("lastUploadedFile", data.fileName);
+          showToast("✅ Archivo subido correctamente", "success");
+          if (data.pdfUrl) openPDFInModal(data.pdfUrl);
+        } else {
+          showToast("❌ Error al subir archivo", "error");
+        }
+      } catch (err) {
+        console.error("Error al subir archivo:", err);
+        showToast("❌ Error de conexión al subir", "error");
       }
     });
   }
 
-  previewBtn && previewBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    if (customTemplateInput && customTemplateInput.files && customTemplateInput.files.length > 0) {
-      const file = customTemplateInput.files[0];
-      const reader = new FileReader();
-      templatePreview.classList.remove("hidden");
-
-      if (file.type === "application/pdf") {
-        reader.onload = ev => templatePreview.innerHTML = `<iframe src="${ev.target.result}" style="width:100%;height:480px;border:1px solid #ccc;border-radius:6px;"></iframe>`;
-        reader.readAsDataURL(file);
-      } else if (file.type === "text/html") {
-        reader.onload = ev => templatePreview.innerHTML = `<iframe srcdoc="${ev.target.result}" style="width:100%;height:480px;border:1px solid #ccc;border-radius:6px;"></iframe>`;
-        reader.readAsText(file);
-      } else {
-        templatePreview.innerHTML = `<p>📂 Vista previa de plantilla: ${file.name} ✔</p>`;
-      }
-    } else if (templateSelect) showTemplatePreview(templateSelect.value);
-  });
+  // =====================================================
+  // 👁️ Función para mostrar vista previa del PDF
+  // =====================================================
+  function openPDFInModal(pdfUrl) {
+    let modal = document.getElementById("pdfModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "pdfModal";
+      Object.assign(modal.style, {
+        position: "fixed",
+        top: 0, left: 0, width: "100%", height: "100%",
+        background: "rgba(0,0,0,0.7)",
+        display: "flex", justifyContent: "center", alignItems: "center",
+        zIndex: "9999"
+      });
+      modal.innerHTML = `
+        <div style="background:#fff;padding:10px;border-radius:8px;max-width:90%;max-height:90%;position:relative;">
+          <button id="closeModalBtn" style="position:absolute;top:5px;right:10px;border:none;background:#f44336;color:#fff;border-radius:4px;padding:5px 10px;cursor:pointer;">X</button>
+          <iframe src="${pdfUrl}" style="width:800px;height:600px;border:none;border-radius:8px;"></iframe>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      document.getElementById("closeModalBtn").addEventListener("click", () => modal.remove());
+    }
+  }
 
   // =====================================================
   // 🔒 Logout
