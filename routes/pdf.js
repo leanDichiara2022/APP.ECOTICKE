@@ -2,41 +2,58 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const pdf = require("html-pdf");
 const router = express.Router();
 
-// Configuración de Multer para la subida de imágenes
+// 📂 Carpeta donde se guardan los PDFs generados
+const generatedDir = path.join(__dirname, "../public/generated_pdfs");
+if (!fs.existsSync(generatedDir)) fs.mkdirSync(generatedDir, { recursive: true });
+
+// 🧩 Configuración de Multer para subir cualquier archivo
 const storage = multer.diskStorage({
-    destination: "uploads/",
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
-    },
+  destination: path.join(__dirname, "../uploads"),
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
 });
 const upload = multer({ storage });
 
-// Ruta para generar PDF con plantilla seleccionada
-router.post("/generar-pdf", upload.single("logo"), (req, res) => {
-    const { nombre_negocio, descripcion, plantilla } = req.body;
-    const logoPath = req.file ? `/uploads/${req.file.filename}` : "";
+// ✅ Nueva ruta: /api/pdf/upload
+router.post("/upload", upload.single("archivo"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No se subió ningún archivo." });
 
-    // Leer la plantilla seleccionada
-    const templatePath = path.join(__dirname, "../templates", plantilla);
-    fs.readFile(templatePath, "utf8", (err, htmlTemplate) => {
-        if (err) return res.status(500).json({ error: "Error al cargar la plantilla" });
+    const originalPath = req.file.path;
+    const extension = path.extname(req.file.originalname).toLowerCase();
+    const fileName = Date.now() + ".pdf";
+    const finalPath = path.join(generatedDir, fileName);
 
-        // Reemplazar variables en la plantilla
-        const htmlContent = htmlTemplate
-            .replace("{{nombre_negocio}}", nombre_negocio)
-            .replace("{{descripcion}}", descripcion)
-            .replace("{{logo_url}}", logoPath);
+    // Si ya es PDF → simplemente moverlo
+    if (extension === ".pdf") {
+      fs.renameSync(originalPath, finalPath);
+    } else {
+      // Si no es PDF → convertirlo a PDF usando pdfkit (simple)
+      const PDFDocument = require("pdfkit");
+      const doc = new PDFDocument();
+      const stream = fs.createWriteStream(finalPath);
+      doc.pipe(stream);
+      doc.fontSize(18).text(`Archivo convertido a PDF: ${req.file.originalname}`, { align: "center" });
+      doc.moveDown();
+      doc.text("Contenido no disponible para este formato.", { align: "center" });
+      doc.end();
 
-        // Configuración y generación del PDF
-        const pdfPath = `./generated_pdfs/${Date.now()}.pdf`;
-        pdf.create(htmlContent).toFile(pdfPath, (err, result) => {
-            if (err) return res.status(500).json({ error: "Error al generar el PDF" });
-            res.json({ url: pdfPath });
-        });
+      // Borramos el archivo original
+      fs.unlinkSync(originalPath);
+    }
+
+    res.status(200).json({
+      message: "Archivo procesado correctamente.",
+      fileName,
+      url: `/generated_pdfs/${fileName}`,
     });
+  } catch (err) {
+    console.error("❌ Error al procesar el archivo:", err);
+    res.status(500).json({ error: "Error al procesar el archivo." });
+  }
 });
 
 module.exports = router;
