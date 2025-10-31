@@ -1,4 +1,3 @@
-// public/js/main.js
 document.addEventListener("DOMContentLoaded", () => {
   const sendWhatsappBtn = document.getElementById("sendWhatsappBtn");
   const sendEmailBtn = document.getElementById("sendEmailBtn");
@@ -25,8 +24,8 @@ document.addEventListener("DOMContentLoaded", () => {
       pdfMessage.style.color = "#555";
 
       const formData = new FormData();
-      // ⚠️ CORRECCIÓN: Multer espera "file", no "archivo"
-      formData.append("file", file);
+      // ⚠️ CORRECCIÓN: Multer espera "archivo" y no "file"
+      formData.append("archivo", file);
 
       try {
         const token = localStorage.getItem("authToken"); // si usás auth token
@@ -212,9 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
         cursor: "pointer",
         borderBottom: "1px solid #eee",
       });
-      item.innerText = `${contact.name || "Sin Nombre"} - ${contact.phone || "-"} - ${
-        contact.email || "-"
-      }`;
+      item.innerText = `${contact.name || "Sin Nombre"} - ${contact.phone || "-"} - ${contact.email || "-"}`;
       item.addEventListener("click", () => {
         phoneInput.value = contact.phone || "";
         emailInput.value = contact.email || "";
@@ -277,4 +274,4 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => (window.location.href = "/login.html"), 1000);
     });
   }
-
+});
