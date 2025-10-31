@@ -24,11 +24,11 @@ document.addEventListener("DOMContentLoaded", () => {
       pdfMessage.style.color = "#555";
 
       const formData = new FormData();
-      formData.append("archivo", file); // Multer espera "archivo"
+      formData.append("archivo", file);
 
       try {
         const token = localStorage.getItem("authToken");
-        const res = await fetch("/api/upload", { // ⚠️ Ruta corregida
+        const res = await fetch("/api/pdf/upload", {
           method: "POST",
           body: formData,
           headers: token ? { "x-auth-token": token } : undefined,
@@ -40,13 +40,14 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
+        // ✅ Leer texto primero para evitar "body stream already read"
+        const text = await res.text();
         let data;
         try {
-          data = await res.json();
+          data = JSON.parse(text);
         } catch (err) {
-          const text = await res.text();
-          console.error("El backend devolvió HTML o respuesta inválida:", text);
-          pdfMessage.textContent = "❌ Error de conexión al subir archivo";
+          console.error("El backend no devolvió JSON válido:", text);
+          pdfMessage.textContent = "❌ Error al subir archivo (respuesta inválida)";
           pdfMessage.style.color = "red";
           return;
         }
@@ -56,13 +57,13 @@ document.addEventListener("DOMContentLoaded", () => {
           pdfMessage.textContent = "✅ Archivo subido correctamente";
           pdfMessage.style.color = "green";
 
-          if (data.url) { // ⚠️ Se ajusta a la propiedad que devuelve tu backend
+          if (data.url) {
             showPDFPreview(data.url);
           } else {
             previewContainer.classList.add("hidden");
           }
         } else {
-          pdfMessage.textContent = "❌ Error al subir archivo";
+          pdfMessage.textContent = "❌ Error al subir archivo: " + (data.error || "");
           pdfMessage.style.color = "red";
         }
       } catch (err) {
