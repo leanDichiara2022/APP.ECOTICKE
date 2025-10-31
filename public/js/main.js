@@ -25,12 +25,15 @@ document.addEventListener("DOMContentLoaded", () => {
       pdfMessage.style.color = "#555";
 
       const formData = new FormData();
-      formData.append("archivo", file);
+      // ⚠️ CORRECCIÓN: Multer espera "file", no "archivo"
+      formData.append("file", file);
 
       try {
+        const token = localStorage.getItem("authToken"); // si usás auth token
         const res = await fetch("/api/pdf/upload", {
           method: "POST",
           body: formData,
+          headers: token ? { "x-auth-token": token } : undefined,
         });
 
         if (res.status === 401) {
@@ -275,24 +278,3 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // =====================================================
-  // 🔔 Toast
-  // =====================================================
-  function showToast(message, type = "info") {
-    const toast = document.createElement("div");
-    toast.textContent = message;
-    toast.style.position = "fixed";
-    toast.style.bottom = "20px";
-    toast.style.right = "20px";
-    toast.style.padding = "10px 15px";
-    toast.style.color = "#fff";
-    toast.style.borderRadius = "6px";
-    toast.style.fontSize = "14px";
-    toast.style.zIndex = "9999";
-    toast.style.background =
-      type === "success" ? "#4caf50" : type === "error" ? "#f44336" : "#2196f3";
-    toast.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-  }
-});
