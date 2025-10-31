@@ -8,7 +8,7 @@ const router = express.Router();
 const generatedDir = path.join(__dirname, "../public/generated_pdfs");
 if (!fs.existsSync(generatedDir)) fs.mkdirSync(generatedDir, { recursive: true });
 
-// 🧩 Configuración de Multer para subir cualquier archivo
+// 🧩 Configuración de Multer
 const storage = multer.diskStorage({
   destination: path.join(__dirname, "../uploads"),
   filename: (req, file, cb) => {
@@ -27,11 +27,11 @@ router.post("/upload", upload.single("archivo"), async (req, res) => {
     const fileName = Date.now() + ".pdf";
     const finalPath = path.join(generatedDir, fileName);
 
-    // Si ya es PDF → simplemente moverlo
+    // Si ya es PDF → mover directamente
     if (extension === ".pdf") {
       fs.renameSync(originalPath, finalPath);
     } else {
-      // Si no es PDF → convertirlo a PDF usando pdfkit (simple)
+      // Si no es PDF → convertir a PDF básico
       const PDFDocument = require("pdfkit");
       const doc = new PDFDocument();
       const stream = fs.createWriteStream(finalPath);
@@ -40,15 +40,15 @@ router.post("/upload", upload.single("archivo"), async (req, res) => {
       doc.moveDown();
       doc.text("Contenido no disponible para este formato.", { align: "center" });
       doc.end();
-
-      // Borramos el archivo original
       fs.unlinkSync(originalPath);
     }
 
+    const pdfUrl = `/generated_pdfs/${fileName}`;
+
     res.status(200).json({
-      message: "Archivo procesado correctamente.",
+      message: "✅ Archivo procesado correctamente.",
       fileName,
-      url: `/generated_pdfs/${fileName}`,
+      pdfUrl,
     });
   } catch (err) {
     console.error("❌ Error al procesar el archivo:", err);

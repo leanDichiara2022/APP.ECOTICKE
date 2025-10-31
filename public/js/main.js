@@ -6,81 +6,158 @@ document.addEventListener("DOMContentLoaded", () => {
   const phoneInput = document.getElementById("phoneNumber");
   const emailInput = document.getElementById("email");
   const detailsInput = document.getElementById("extraDetails");
+  const fileInput = document.getElementById("archivo");
+  const pdfMessage = document.getElementById("pdfMessage");
+  const previewContainer = document.createElement("div");
+  previewContainer.id = "pdfPreviewContainer";
+  previewContainer.className = "preview-box hidden";
+  document.querySelector(".upload-section").appendChild(previewContainer);
+
+  // =====================================================
+  // 📑 Subida y vista previa automática
+  // =====================================================
+  if (fileInput) {
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      pdfMessage.textContent = "⏳ Subiendo archivo...";
+      pdfMessage.style.color = "#555";
+
+      const formData = new FormData();
+      formData.append("archivo", file);
+
+      try {
+        const res = await fetch("/api/pdf/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (res.status === 401) {
+          pdfMessage.textContent = "⚠️ Sesión expirada. Volvé a iniciar sesión.";
+          pdfMessage.style.color = "red";
+          return;
+        }
+
+        const data = await res.json();
+
+        if (res.ok && data.fileName) {
+          localStorage.setItem("lastUploadedFile", data.fileName);
+          pdfMessage.textContent = "✅ Archivo subido correctamente";
+          pdfMessage.style.color = "green";
+
+          if (data.pdfUrl) {
+            showPDFPreview(data.pdfUrl);
+          } else {
+            previewContainer.classList.add("hidden");
+          }
+        } else {
+          pdfMessage.textContent = "❌ Error al subir archivo";
+          pdfMessage.style.color = "red";
+        }
+      } catch (err) {
+        console.error("Error al subir archivo:", err);
+        pdfMessage.textContent = "❌ Error de conexión al subir archivo";
+        pdfMessage.style.color = "red";
+      }
+    });
+  }
+
+  function showPDFPreview(url) {
+    previewContainer.innerHTML = `
+      <iframe src="${url}" style="width:100%;height:500px;border:none;border-radius:8px;"></iframe>
+    `;
+    previewContainer.classList.remove("hidden");
+  }
 
   // =====================================================
   // 📱 Enviar por WhatsApp
   // =====================================================
-  sendWhatsappBtn && sendWhatsappBtn.addEventListener("click", async (e) => {
-    e.preventDefault();
-    const countryCode = document.getElementById("countryCode").value;
-    const phone = phoneInput.value.trim();
-    const details = detailsInput.value;
-    const fileName = localStorage.getItem("lastUploadedFile");
+  sendWhatsappBtn &&
+    sendWhatsappBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const countryCode = document.getElementById("countryCode").value;
+      const phone = phoneInput.value.trim();
+      const details = detailsInput.value;
+      const fileName = localStorage.getItem("lastUploadedFile");
 
-    if (!phone || !fileName) {
-      showToast("⚠️ Debes ingresar un número y subir un archivo primero.", "error");
-      return;
-    }
-
-    const phoneNumber = countryCode.replace("+", "") + phone;
-
-    try {
-      const res = await fetch("/api/whatsapp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber, fileName, details }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        showToast("📲 Enlace de WhatsApp generado con éxito", "success");
-        localStorage.setItem("lastSentContact", JSON.stringify({
-          phone, email: emailInput.value, details, fileName
-        }));
-      } else {
-        showToast("❌ Error al generar el link de WhatsApp", "error");
+      if (!phone || !fileName) {
+        showToast("⚠️ Debes ingresar un número y subir un archivo primero.", "error");
+        return;
       }
-      if (data.whatsappLink) window.open(data.whatsappLink, "_blank");
-    } catch (error) {
-      console.error("Error enviando WhatsApp:", error);
-      showToast("❌ No se pudo enviar por WhatsApp", "error");
-    }
-  });
+
+      const phoneNumber = countryCode.replace("+", "") + phone;
+
+      try {
+        const res = await fetch("/api/whatsapp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phoneNumber, fileName, details }),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          showToast("📲 Enlace de WhatsApp generado con éxito", "success");
+          localStorage.setItem(
+            "lastSentContact",
+            JSON.stringify({
+              phone,
+              email: emailInput.value,
+              details,
+              fileName,
+            })
+          );
+          if (data.whatsappLink) window.open(data.whatsappLink, "_blank");
+        } else {
+          showToast("❌ Error al generar el link de WhatsApp", "error");
+        }
+      } catch (error) {
+        console.error("Error enviando WhatsApp:", error);
+        showToast("❌ No se pudo enviar por WhatsApp", "error");
+      }
+    });
 
   // =====================================================
   // 📧 Enviar por Email
   // =====================================================
-  sendEmailBtn && sendEmailBtn.addEventListener("click", async (e) => {
-    e.preventDefault();
-    const email = emailInput.value.trim();
-    const fileName = localStorage.getItem("lastUploadedFile");
+  sendEmailBtn &&
+    sendEmailBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+      const fileName = localStorage.getItem("lastUploadedFile");
 
-    if (!email || !fileName) {
-      showToast("⚠️ Debes ingresar un correo y subir un archivo primero.", "error");
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/correo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, fileName }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        showToast("📧 Correo enviado con éxito!", "success");
-        localStorage.setItem("lastSentContact", JSON.stringify({
-          phone: phoneInput.value, email, details: detailsInput.value, fileName
-        }));
-      } else {
-        showToast("❌ Error al enviar correo: " + (data.error || ""), "error");
+      if (!email || !fileName) {
+        showToast("⚠️ Debes ingresar un correo y subir un archivo primero.", "error");
+        return;
       }
-    } catch (error) {
-      console.error("Error enviando correo:", error);
-      showToast("❌ No se pudo enviar por correo", "error");
-    }
-  });
+
+      try {
+        const res = await fetch("/api/correo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, fileName }),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          showToast("📧 Correo enviado con éxito!", "success");
+          localStorage.setItem(
+            "lastSentContact",
+            JSON.stringify({
+              phone: phoneInput.value,
+              email,
+              details: detailsInput.value,
+              fileName,
+            })
+          );
+        } else {
+          showToast("❌ Error al enviar correo: " + (data.error || ""), "error");
+        }
+      } catch (error) {
+        console.error("Error enviando correo:", error);
+        showToast("❌ No se pudo enviar por correo", "error");
+      }
+    });
 
   // =====================================================
   // 🔎 Buscar Cliente
@@ -96,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
     overflowY: "auto",
     width: "250px",
     display: "none",
-    zIndex: "1000"
+    zIndex: "1000",
   });
   document.body.appendChild(searchResultsContainer);
 
@@ -125,14 +202,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     searchResultsContainer.innerHTML = "";
-    contacts.forEach(contact => {
+    contacts.forEach((contact) => {
       const item = document.createElement("div");
       Object.assign(item.style, {
         padding: "8px",
         cursor: "pointer",
-        borderBottom: "1px solid #eee"
+        borderBottom: "1px solid #eee",
       });
-      item.innerText = `${contact.name || "Sin Nombre"} - ${contact.phone || "-"} - ${contact.email || "-"}`;
+      item.innerText = `${contact.name || "Sin Nombre"} - ${contact.phone || "-"} - ${
+        contact.email || "-"
+      }`;
       item.addEventListener("click", () => {
         phoneInput.value = contact.phone || "";
         emailInput.value = contact.email || "";
@@ -147,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
     searchResultsContainer.style.display = "block";
   }
 
-  [phoneInput, emailInput].forEach(input => {
+  [phoneInput, emailInput].forEach((input) => {
     if (!input) return;
     input.addEventListener("input", async () => {
       const query = input.value.trim();
@@ -160,86 +239,28 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  searchClientBtn && searchClientBtn.addEventListener("click", async (e) => {
-    e.preventDefault();
-    const query = phoneInput.value.trim() || emailInput.value.trim();
-    if (!query) {
-      showToast("⚠️ Ingresa un teléfono o correo para buscar.", "error");
-      return;
-    }
-    const contacts = await searchClients(query);
-    showResults(contacts, phoneInput);
-  });
+  searchClientBtn &&
+    searchClientBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const query = phoneInput.value.trim() || emailInput.value.trim();
+      if (!query) {
+        showToast("⚠️ Ingresa un teléfono o correo para buscar.", "error");
+        return;
+      }
+      const contacts = await searchClients(query);
+      showResults(contacts, phoneInput);
+    });
 
   document.addEventListener("click", (e) => {
-    if (!searchResultsContainer.contains(e.target) &&
-        e.target !== searchClientBtn &&
-        e.target !== phoneInput &&
-        e.target !== emailInput) {
+    if (
+      !searchResultsContainer.contains(e.target) &&
+      e.target !== searchClientBtn &&
+      e.target !== phoneInput &&
+      e.target !== emailInput
+    ) {
       searchResultsContainer.style.display = "none";
     }
   });
-
-  // =====================================================
-  // 📑 Subida y vista previa de archivos PDF
-  // =====================================================
-  const fileInput = document.getElementById("fileInput");
-  const previewContainer = document.getElementById("previewContainer");
-
-  if (fileInput) {
-    fileInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const formData = new FormData();
-      formData.append("archivo", file);
-
-      try {
-        const res = await fetch("/api/pdf/upload", {
-          method: "POST",
-          body: formData
-        });
-        const data = await res.json();
-
-        if (res.ok && data.fileName) {
-          localStorage.setItem("lastUploadedFile", data.fileName);
-          showToast("✅ Archivo subido correctamente", "success");
-          if (data.pdfUrl) openPDFInModal(data.pdfUrl);
-        } else {
-          showToast("❌ Error al subir archivo", "error");
-        }
-      } catch (err) {
-        console.error("Error al subir archivo:", err);
-        showToast("❌ Error de conexión al subir", "error");
-      }
-    });
-  }
-
-  // =====================================================
-  // 👁️ Función para mostrar vista previa del PDF
-  // =====================================================
-  function openPDFInModal(pdfUrl) {
-    let modal = document.getElementById("pdfModal");
-    if (!modal) {
-      modal = document.createElement("div");
-      modal.id = "pdfModal";
-      Object.assign(modal.style, {
-        position: "fixed",
-        top: 0, left: 0, width: "100%", height: "100%",
-        background: "rgba(0,0,0,0.7)",
-        display: "flex", justifyContent: "center", alignItems: "center",
-        zIndex: "9999"
-      });
-      modal.innerHTML = `
-        <div style="background:#fff;padding:10px;border-radius:8px;max-width:90%;max-height:90%;position:relative;">
-          <button id="closeModalBtn" style="position:absolute;top:5px;right:10px;border:none;background:#f44336;color:#fff;border-radius:4px;padding:5px 10px;cursor:pointer;">X</button>
-          <iframe src="${pdfUrl}" style="width:800px;height:600px;border:none;border-radius:8px;"></iframe>
-        </div>
-      `;
-      document.body.appendChild(modal);
-      document.getElementById("closeModalBtn").addEventListener("click", () => modal.remove());
-    }
-  }
 
   // =====================================================
   // 🔒 Logout
@@ -250,12 +271,12 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       localStorage.clear();
       showToast("👋 Sesión cerrada correctamente", "success");
-      setTimeout(() => window.location.href = "/login.html", 1000);
+      setTimeout(() => (window.location.href = "/login.html"), 1000);
     });
   }
 
   // =====================================================
-  // 🔔 Función Toast Global
+  // 🔔 Toast
   // =====================================================
   function showToast(message, type = "info") {
     const toast = document.createElement("div");
@@ -268,9 +289,8 @@ document.addEventListener("DOMContentLoaded", () => {
     toast.style.borderRadius = "6px";
     toast.style.fontSize = "14px";
     toast.style.zIndex = "9999";
-    toast.style.background = type === "success" ? "#4caf50" :
-                             type === "error" ? "#f44336" :
-                             "#2196f3";
+    toast.style.background =
+      type === "success" ? "#4caf50" : type === "error" ? "#f44336" : "#2196f3";
     toast.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);

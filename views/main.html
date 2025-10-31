@@ -46,18 +46,14 @@
     <main>
       <!-- Formulario de subida de archivo -->
       <section class="upload-section">
-        <h2 data-i18n="upload_heading">Subir archivo (se convierte a PDF si es necesario)</h2>
-        <form id="pdfForm" enctype="multipart/form-data" novalidate>
-          <label for="archivo" class="file-label">Seleccionar archivo:</label>
-          <input type="file" id="archivo" name="archivo" accept="*/*" />
-          <button type="submit" id="uploadBtn" data-i18n="upload_button">Subir y convertir</button>
-        </form>
-        <p style="font-size: 0.9em; margin-top: 5px; color: #666;">
-          Podés subir cualquier archivo. Si no es PDF, se intentará convertir automáticamente.
-        </p>
-        <p id="pdfMessage" style="margin-top: 10px;"></p>
-      </section>
-
+       <form id="pdfForm" enctype="multipart/form-data" novalidate>
+  <label for="archivo" class="file-label">Seleccionar archivo:</label>
+  <input type="file" id="archivo" name="archivo" accept="*/*" />
+</form>
+<p style="font-size: 0.9em; margin-top: 5px; color: #666;">
+  Podés subir cualquier archivo. Si no es PDF.
+</p>
+<p id="pdfMessage" style="margin-top: 10px;"></p>
       <!-- Selector de Plantillas -->
       <section class="template-section">
         <h2 data-i18n="template_heading">Elegir Plantilla</h2>
