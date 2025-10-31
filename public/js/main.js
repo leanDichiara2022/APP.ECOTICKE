@@ -24,12 +24,11 @@ document.addEventListener("DOMContentLoaded", () => {
       pdfMessage.style.color = "#555";
 
       const formData = new FormData();
-      // ⚠️ CORRECCIÓN: Multer espera "archivo" y no "file"
-      formData.append("archivo", file);
+      formData.append("archivo", file); // Multer espera "archivo"
 
       try {
-        const token = localStorage.getItem("authToken"); // si usás auth token
-        const res = await fetch("/api/pdf/upload", {
+        const token = localStorage.getItem("authToken");
+        const res = await fetch("/api/upload", { // ⚠️ Ruta corregida
           method: "POST",
           body: formData,
           headers: token ? { "x-auth-token": token } : undefined,
@@ -41,15 +40,24 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        const data = await res.json();
+        let data;
+        try {
+          data = await res.json();
+        } catch (err) {
+          const text = await res.text();
+          console.error("El backend devolvió HTML o respuesta inválida:", text);
+          pdfMessage.textContent = "❌ Error de conexión al subir archivo";
+          pdfMessage.style.color = "red";
+          return;
+        }
 
         if (res.ok && data.fileName) {
           localStorage.setItem("lastUploadedFile", data.fileName);
           pdfMessage.textContent = "✅ Archivo subido correctamente";
           pdfMessage.style.color = "green";
 
-          if (data.pdfUrl) {
-            showPDFPreview(data.pdfUrl);
+          if (data.url) { // ⚠️ Se ajusta a la propiedad que devuelve tu backend
+            showPDFPreview(data.url);
           } else {
             previewContainer.classList.add("hidden");
           }
