@@ -81,11 +81,15 @@ app.use((req, res, next) => {
 });
 
 // 🔹 Middleware de redirección global (HTML protegido)
+const auth = require("./middlewares/auth");
 app.use((req, res, next) => {
   const token = req.headers["x-auth-token"];
-  const isHtmlRoute = req.path.endsWith(".html") || ["/main", "/tickets", "/contacts", "/plans"].includes(req.path);
+  const isHtmlRoute =
+    req.path.endsWith(".html") ||
+    ["/main", "/tickets", "/contacts", "/plans"].includes(req.path);
 
-  if (isHtmlRoute && !token) {
+  // Redirigir al login si no hay token
+  if (isHtmlRoute && !token && !req.path.startsWith("/login") && !req.path.startsWith("/register")) {
     return res.redirect("/login.html");
   }
   next();
@@ -96,10 +100,8 @@ app.get("/", (req, res) => res.sendFile(path.join(publicPath, "index.html")));
 app.get("/register", (req, res) => res.sendFile(path.join(publicPath, "register.html")));
 app.get("/login", (req, res) => res.sendFile(path.join(publicPath, "login.html")));
 
-// 🔹 Rutas protegidas
-const auth = require("./middlewares/auth");
+// 🔹 Rutas protegidas (HTML)
 const viewsPath = path.join(__dirname, "views");
-
 app.get("/main", auth, (req, res) => res.sendFile(path.join(viewsPath, "main.html")));
 app.get("/tickets", auth, (req, res) => res.sendFile(path.join(viewsPath, "tickets.html")));
 app.get("/contacts", auth, (req, res) => res.sendFile(path.join(viewsPath, "contacts.html")));
@@ -112,6 +114,10 @@ try {
   app.use("/api/contacts", require("./routes/contacts"));
   app.use("/mercadopago", require("./routes/mercadopago"));
   app.use("/paypal", require("./routes/paypal"));
+
+  // ✅ Ruta PDF unificada
+  app.use("/api/pdf", require("./routes/pdfRoutes"));
+
   console.log("📡 Todas las rutas montadas correctamente");
 } catch (err) {
   console.error("❌ Error cargando rutas:", err.message);

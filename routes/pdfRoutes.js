@@ -1,66 +1,57 @@
 const express = require("express");
-const router = express.Router();
 const multer = require("multer");
 const path = require("path");
-const auth = require("../middlewares/auth");
-const { generarPDF, registerPDF } = require("../controllers/pdfController");
+const fs = require("fs");
+const router = express.Router();
 
-// Configuración de Multer blindada
+// 📂 Carpeta donde se guardan los PDFs generados
+const generatedDir = path.join(__dirname, "../public/generated_pdfs");
+if (!fs.existsSync(generatedDir)) fs.mkdirSync(generatedDir, { recursive: true });
+
+// 🧩 Configuración de Multer
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "..", "uploads"));
-  },
+  destination: path.join(__dirname, "../uploads"),
   filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
-    cb(null, uniqueName);
+    cb(null, Date.now() + path.extname(file.originalname));
   },
 });
+const upload = multer({ storage });
 
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword'
-    ];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Formato de archivo no permitido"));
-    }
-  }
-});
-
-// Ruta protegida para generación de PDF desde frontend
-router.post("/generar", auth, generarPDF);
-
-// Ruta para carga de PDF desde móvil (upload manual)
-router.post("/upload", upload.single("file"), async (req, res) => {
+// ✅ Endpoint principal: /api/pdf/upload
+router.post("/upload", upload.single("archivo"), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No se recibió el archivo" });
-    }
+    if (!req.file) return res.status(400).json({ error: "No se subió ningún archivo." });
 
-    const originalFilePath = req.file.path;
-    const { email, celular } = req.body;
+    const originalPath = req.file.path;
+    const extension = path.extname(req.file.originalname).toLowerCase();
+    const fileName = Date.now() + ".pdf";
+    const finalPath = path.join(generatedDir, fileName);
 
-    const result = await registerPDF({
-      originalFilePath,
-      email: email || null,
-      celular: celular || null,
-      origen: "manual"
-    });
-
-    if (result.success) {
-      res.json({ message: "Archivo registrado exitosamente", url: result.url });
+    // Si ya es PDF → mover directamente
+    if (extension === ".pdf") {
+      fs.renameSync(originalPath, finalPath);
     } else {
-      console.error("Error en registerPDF:", result.error);
-      res.status(500).json({ error: "Error al registrar el PDF" });
+      // Si no es PDF → convertir a PDF simple
+      const PDFDocument = require("pdfkit");
+      const doc = new PDFDocument();
+      const stream = fs.createWriteStream(finalPath);
+      doc.pipe(stream);
+      doc.fontSize(18).text(`Archivo convertido a PDF: ${req.file.originalname}`, { align: "center" });
+      doc.moveDown();
+      doc.text("Contenido no disponible para este formato.", { align: "center" });
+      doc.end();
+      fs.unlinkSync(originalPath);
     }
-  } catch (error) {
-    console.error("Error en el upload:", error);
-    res.status(500).json({ error: "Error al enviar el archivo." });
+
+    const pdfUrl = `/generated_pdfs/${fileName}`;
+    res.status(200).json({
+      message: "✅ Archivo procesado correctamente.",
+      fileName,
+      pdfUrl,
+    });
+  } catch (err) {
+    console.error("❌ Error al procesar el archivo:", err);
+    res.status(500).json({ error: "Error al procesar el archivo." });
   }
 });
 
