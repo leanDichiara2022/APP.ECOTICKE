@@ -15,8 +15,8 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const isProduction = process.env.NODE_ENV === "production";
 
 // Middlewares base
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "500mb" }));
+app.use(express.urlencoded({ extended: true, limit: "500mb" }));
 app.use(
   cors({
     origin: [
@@ -88,7 +88,6 @@ app.use((req, res, next) => {
     req.path.endsWith(".html") ||
     ["/main", "/tickets", "/contacts", "/plans"].includes(req.path);
 
-  // Redirigir al login si no hay token
   if (isHtmlRoute && !token && !req.path.startsWith("/login") && !req.path.startsWith("/register")) {
     return res.redirect("/login.html");
   }
@@ -114,8 +113,6 @@ try {
   app.use("/api/contacts", require("./routes/contacts"));
   app.use("/mercadopago", require("./routes/mercadopago"));
   app.use("/paypal", require("./routes/paypal"));
-
-  // ✅ Ruta PDF unificada
   app.use("/api/pdf", require("./routes/pdfRoutes"));
 
   console.log("📡 Todas las rutas montadas correctamente");
