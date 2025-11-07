@@ -134,7 +134,7 @@ try {
 }
 
 // Health check
-app.get("/health", (req, res) => res.json({ status: "ok", time: new Date().toISOString() }));
+//app.get("/health", (req, res) => res.json({ status: "ok", time: new Date().toISOString() }));
 
 // Fallback 404
 app.use((req, res, next) => {
@@ -144,6 +144,9 @@ app.use((req, res, next) => {
   res.status(404).sendFile(path.join(publicPath, "404.html"), (err) => {
     if (err) res.status(404).send("Not Found");
   });
+});
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "OK", message: "ECOTICKE Server Running" });
 });
 
 // Iniciar servidor
