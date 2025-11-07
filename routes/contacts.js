@@ -1,5 +1,5 @@
 const express = require("express");
-const Contact = require("../models/Contact");
+const Contact = require("../models/contact"); // ✅ corregido (antes "../models/Contact")
 const auth = require("../middlewares/auth");
 const logger = require("../utils/logger");
 

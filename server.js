@@ -8,6 +8,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 const session = require("express-session");
+const mercadopago = require("mercadopago");
 
 // Inicializar app
 const app = express();
@@ -94,6 +95,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// 🔹 Configurar MercadoPago (compatibilidad moderna)
+try {
+  if (mercadopago.configure) {
+    mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
+  } else {
+    mercadopago.configurations.setAccessToken(process.env.MP_ACCESS_TOKEN);
+  }
+  console.log("💳 MercadoPago configurado correctamente");
+} catch (err) {
+  console.error("⚠️ Error configurando MercadoPago:", err.message);
+}
+
 // 🔹 Rutas públicas
 app.get("/", (req, res) => res.sendFile(path.join(publicPath, "index.html")));
 app.get("/register", (req, res) => res.sendFile(path.join(publicPath, "register.html")));
@@ -110,7 +123,7 @@ app.get("/plans", auth, (req, res) => res.sendFile(path.join(viewsPath, "plans.h
 try {
   app.use("/api/usuarios", require("./routes/usuarios"));
   app.use("/api/tickets", require("./routes/tickets"));
-  app.use("/api/contacts", require("./routes/contacts"));
+  app.use("/api/contacts", require("./routes/contacts")); // <- Contact.js corregido (minúscula)
   app.use("/mercadopago", require("./routes/mercadopago"));
   app.use("/paypal", require("./routes/paypal"));
   app.use("/api/pdf", require("./routes/pdfRoutes"));
