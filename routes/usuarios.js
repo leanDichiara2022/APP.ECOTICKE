@@ -25,20 +25,17 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ message: "El correo ya está registrado." });
     }
 
-    // Hash de la contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Crear nuevo usuario
     const newUser = new Usuario({
       nombre,
       email: emailLower,
       password: hashedPassword,
       plan: { tipo: "personal", estado: "prueba" },
       allowedDevices: 1,
-      devices: [] // iniciar vacío
+      devices: []
     });
 
-    // si vino deviceId (registro desde el cliente), añadimos el dispositivo
     if (deviceId) {
       newUser.devices.push({ deviceId, lastUsed: new Date() });
     }
@@ -64,8 +61,8 @@ router.post("/login", async (req, res) => {
     }
 
     const emailLower = email.toLowerCase();
-
     const user = await Usuario.findOne({ email: emailLower });
+
     if (!user) {
       logger.warn("Login fallido: usuario no encontrado", { email: emailLower });
       return res.status(404).json({ message: "Usuario no encontrado." });
@@ -73,14 +70,11 @@ router.post("/login", async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      logger.warn("Login fallido: contraseña incorrecta", { userId: user._id, email: emailLower });
+      logger.warn("Login fallido: contraseña incorrecta", { userId: user._id });
       return res.status(401).json({ message: "Contraseña incorrecta." });
     }
 
-    // Determinar límite de dispositivos según plan
     const maxDevices = user.allowedDevices || 1;
-
-    // Buscar si el dispositivo ya existe (usa la propiedad devices del modelo)
     const existingDevice = user.devices.find(d => d.deviceId === deviceId);
 
     if (!existingDevice) {
@@ -95,26 +89,22 @@ router.post("/login", async (req, res) => {
         });
       }
 
-      // Registrar nuevo dispositivo
       user.devices.push({ deviceId, lastUsed: new Date() });
     } else {
-      // Actualizar fecha de último uso
       existingDevice.lastUsed = new Date();
     }
 
     await user.save();
 
-    // Generar token JWT
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
 
-    // Remover contraseña del objeto antes de enviar
     const { password: _, ...userWithoutPassword } = user.toObject();
 
-    logger.info("Inicio de sesión exitoso", { userId: user._id, email: emailLower, deviceId });
+    logger.info("Inicio de sesión exitoso", { userId: user._id, deviceId });
     res.status(200).json({
       message: "Inicio de sesión exitoso.",
       token,
@@ -128,14 +118,14 @@ router.post("/login", async (req, res) => {
 
 // ------------------ CIERRE DE SESIÓN ------------------
 router.post("/logout", async (req, res) => {
-  const token = req.header("Authorization")?.replace("Bearer ", "");
-  const deviceId = req.header("x-device-id");
-
-  if (!token || !deviceId) {
-    return res.status(400).json({ message: "Token y deviceId son obligatorios." });
-  }
-
   try {
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    const deviceId = req.header("x-device-id");
+
+    if (!token || !deviceId) {
+      return res.status(400).json({ message: "Token y deviceId son obligatorios." });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await Usuario.findById(decoded.id);
 
@@ -143,11 +133,17 @@ router.post("/logout", async (req, res) => {
       return res.status(401).json({ message: "Usuario no encontrado." });
     }
 
-    // Remover el deviceId de la lista de dispositivos
+    // ⚡ FIX IMPORTANTE: eliminar SOLO ese deviceId sin romper otros dispositivos
     user.devices = user.devices.filter(d => d.deviceId !== deviceId);
+
     await user.save();
 
-    logger.info("Cierre de sesión exitoso", { userId: user._id, email: user.email, deviceId });
+    logger.info("Cierre de sesión exitoso", {
+      userId: user._id,
+      email: user.email,
+      deviceId
+    });
+
     res.json({ message: "Cierre de sesión exitoso." });
   } catch (error) {
     logger.error("Error en logout", { error: error.message });
@@ -177,7 +173,7 @@ router.get("/search", async (req, res) => {
     logger.info("Búsqueda de usuario exitosa", { userId: usuario._id, query: q });
     res.json(usuario);
   } catch (err) {
-    logger.error("Error al buscar usuario", { error: err.message, query: q });
+    logger.error("Error al buscar usuario", { error: err.message });
     res.status(500).json({ message: "Error en el servidor." });
   }
 });
