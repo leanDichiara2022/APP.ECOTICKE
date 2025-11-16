@@ -98,20 +98,23 @@ app.use((req, res, next) => {
 // 🔒 Middleware para proteger rutas HTML
 // ===============================
 const auth = require("./middlewares/auth");
+
 app.use((req, res, next) => {
-  const token = req.headers["x-auth-token"];
-  const isHtmlRoute =
+  const isHtml =
     req.path.endsWith(".html") ||
     ["/main", "/tickets", "/contacts", "/plans"].includes(req.path);
 
-  if (isHtmlRoute && !token && !req.path.startsWith("/login") && !req.path.startsWith("/register")) {
-    return res.redirect("/login.html");
+  const token = req.headers["x-auth-token"];
+
+  if (isHtml && !token) {
+    return res.sendFile(path.join(publicPath, "login.html"));
   }
+
   next();
 });
 
 // ===============================
-// 💳 Configurar MercadoPago moderno
+// 💳 Configurar MercadoPago
 // ===============================
 try {
   if (typeof mercadopago.configure === "function") {
@@ -128,16 +131,28 @@ try {
 // 📄 Rutas públicas
 // ===============================
 app.get("/", (req, res) => res.sendFile(path.join(publicPath, "index.html")));
-app.get("/register", (req, res) => res.sendFile(path.join(publicPath, "register.html")));
-app.get("/login", (req, res) => res.sendFile(path.join(publicPath, "login.html")));
+app.get("/register", (req, res) =>
+  res.sendFile(path.join(publicPath, "register.html"))
+);
+app.get("/login", (req, res) =>
+  res.sendFile(path.join(publicPath, "login.html"))
+);
 
 // ===============================
 // 🔐 Rutas protegidas (HTML)
 // ===============================
-app.get("/main", auth, (req, res) => res.sendFile(path.join(viewsPath, "main.html")));
-app.get("/tickets", auth, (req, res) => res.sendFile(path.join(viewsPath, "tickets.html")));
-app.get("/contacts", auth, (req, res) => res.sendFile(path.join(viewsPath, "contacts.html")));
-app.get("/plans", auth, (req, res) => res.sendFile(path.join(viewsPath, "plans.html")));
+app.get("/main", auth, (req, res) =>
+  res.sendFile(path.join(viewsPath, "main.html"))
+);
+app.get("/tickets", auth, (req, res) =>
+  res.sendFile(path.join(viewsPath, "tickets.html"))
+);
+app.get("/contacts", auth, (req, res) =>
+  res.sendFile(path.join(viewsPath, "contacts.html"))
+);
+app.get("/plans", auth, (req, res) =>
+  res.sendFile(path.join(viewsPath, "plans.html"))
+);
 
 // ===============================
 // 🧩 Rutas API
