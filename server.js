@@ -10,9 +10,6 @@ const rateLimit = require("express-rate-limit");
 const session = require("express-session");
 const mercadopago = require("mercadopago");
 
-// ===============================
-// 🚀 Inicialización del servidor
-// ===============================
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const isProduction = process.env.NODE_ENV === "production";
@@ -70,7 +67,7 @@ app.use(
 );
 
 // ===============================
-// 🧠 Conexión MongoDB
+// 🧠 MongoDB
 // ===============================
 mongoose
   .connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ecoticke")
@@ -78,14 +75,14 @@ mongoose
   .catch((err) => console.error("❌ Error al conectar a MongoDB:", err.message));
 
 // ===============================
-// 🌐 Archivos estáticos
+// 🌐 Paths
 // ===============================
 const publicPath = path.join(__dirname, "public");
 const viewsPath = path.join(__dirname, "views");
 app.use(express.static(publicPath));
 
 // ===============================
-// 🔑 Middleware global para token
+// 🔑 Middleware global para token (solo copia token desde query)
 // ===============================
 app.use((req, res, next) => {
   if (req.query.token && !req.headers["x-auth-token"]) {
@@ -95,37 +92,21 @@ app.use((req, res, next) => {
 });
 
 // ===============================
-// 🔒 Middleware para proteger rutas HTML
+// 🔒 Middleware LIMPIO para rutas HTML (NO valida token)
 // ===============================
-const auth = require("./middlewares/auth");
-
 app.use((req, res, next) => {
-  const isHtml =
+  const isHtmlRequest =
     req.path.endsWith(".html") ||
     ["/main", "/tickets", "/contacts", "/plans"].includes(req.path);
 
-  const token = req.headers["x-auth-token"];
-
-  if (isHtml && !token) {
-    return res.sendFile(path.join(publicPath, "login.html"));
-  }
-
-  next();
+  // Si es HTML, dejamos que el middleware auth lo maneje
+  return next();
 });
 
 // ===============================
-// 💳 Configurar MercadoPago
+// 🔐 Middleware auth real
 // ===============================
-try {
-  if (typeof mercadopago.configure === "function") {
-    mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
-  } else if (mercadopago.configurations?.setAccessToken) {
-    mercadopago.configurations.setAccessToken(process.env.MP_ACCESS_TOKEN);
-  }
-  console.log("💳 MercadoPago configurado correctamente");
-} catch (err) {
-  console.error("⚠️ Error configurando MercadoPago:", err.message);
-}
+const auth = require("./middlewares/auth");
 
 // ===============================
 // 📄 Rutas públicas
@@ -139,7 +120,7 @@ app.get("/login", (req, res) =>
 );
 
 // ===============================
-// 🔐 Rutas protegidas (HTML)
+// 🔐 Rutas protegidas HTML
 // ===============================
 app.get("/main", auth, (req, res) =>
   res.sendFile(path.join(viewsPath, "main.html"))
@@ -168,6 +149,20 @@ app.get("/plans", auth, (req, res) =>
 app.get("/plans.html", auth, (req, res) =>
   res.sendFile(path.join(viewsPath, "plans.html"))
 );
+
+// ===============================
+// 💳 MercadoPago
+// ===============================
+try {
+  if (typeof mercadopago.configure === "function") {
+    mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
+  } else if (mercadopago.configurations?.setAccessToken) {
+    mercadopago.configurations.setAccessToken(process.env.MP_ACCESS_TOKEN);
+  }
+  console.log("💳 MercadoPago configurado correctamente");
+} catch (err) {
+  console.error("⚠️ Error configurando MercadoPago:", err.message);
+}
 
 // ===============================
 // 🧩 Rutas API
