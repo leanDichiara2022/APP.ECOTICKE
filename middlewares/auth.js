@@ -1,14 +1,19 @@
 const jwt = require("jsonwebtoken");
 
 module.exports = function (req, res, next) {
-    const token = req.header("x-auth-token");
+    let token = req.header("x-auth-token") || req.header("authorization");
+
     if (!token) {
-        // Si la petición viene del navegador (HTML), redirigimos al login
         if (req.accepts("html")) {
             return res.redirect("/login.html");
         } else {
             return res.status(401).json({ msg: "No hay token, autorización denegada" });
         }
+    }
+
+    // Si viene con formato "Bearer XXX", lo limpiamos
+    if (token.startsWith("Bearer ")) {
+        token = token.replace("Bearer ", "").trim();
     }
 
     try {
