@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
         body: JSON.stringify({ email, password, deviceId }),
       });
 
-      // 🔒 Protección total contra HTML en vez de JSON
+      // Proteger JSON
       let result;
       try {
         result = await response.json();
@@ -50,11 +50,11 @@ document.addEventListener("DOMContentLoaded", function () {
           message.className = "message success";
         }
 
-        // Redirigir pasando el token en la URL
+        // 👉 CORREGIDO: REDIRIGE A main.html
         setTimeout(() => {
-          const token = result.token;
-          window.location.href = `/main?token=${token}`;
-        }, 1200);
+          window.location.href = "/main.html";
+        }, 1000);
+
       } else {
         if (message) {
           message.textContent = result.message || "Error al iniciar sesión.";
