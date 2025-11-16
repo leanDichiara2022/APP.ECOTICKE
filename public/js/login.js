@@ -32,7 +32,13 @@ document.addEventListener("DOMContentLoaded", function () {
         body: JSON.stringify({ email, password, deviceId }),
       });
 
-      const result = await response.json();
+      // 🔒 Protección total contra HTML en vez de JSON
+      let result;
+      try {
+        result = await response.json();
+      } catch {
+        throw new Error("Respuesta del servidor no válida (HTML recibido).");
+      }
 
       if (response.ok) {
         // Guardar token y usuario
