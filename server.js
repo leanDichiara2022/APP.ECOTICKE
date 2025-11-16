@@ -78,29 +78,17 @@ mongoose
 // 🌐 Paths
 // ===============================
 const publicPath = path.join(__dirname, "public");
-const viewsPath = path.join(__dirname, "views");
 app.use(express.static(publicPath));
 
+
 // ===============================
-// 🔑 Middleware global para token (solo copia token desde query)
+// 🔑 Middleware global para token
 // ===============================
 app.use((req, res, next) => {
   if (req.query.token && !req.headers["x-auth-token"]) {
     req.headers["x-auth-token"] = req.query.token;
   }
   next();
-});
-
-// ===============================
-// 🔒 Middleware LIMPIO para rutas HTML (NO valida token)
-// ===============================
-app.use((req, res, next) => {
-  const isHtmlRequest =
-    req.path.endsWith(".html") ||
-    ["/main", "/tickets", "/contacts", "/plans"].includes(req.path);
-
-  // Si es HTML, dejamos que el middleware auth lo maneje
-  return next();
 });
 
 // ===============================
@@ -120,34 +108,34 @@ app.get("/login", (req, res) =>
 );
 
 // ===============================
-// 🔐 Rutas protegidas HTML
+// 🔐 Rutas protegidas HTML (desde /public)
 // ===============================
 app.get("/main", auth, (req, res) =>
-  res.sendFile(path.join(viewsPath, "main.html"))
+  res.sendFile(path.join(publicPath, "main.html"))
 );
 app.get("/main.html", auth, (req, res) =>
-  res.sendFile(path.join(viewsPath, "main.html"))
+  res.sendFile(path.join(publicPath, "main.html"))
 );
 
 app.get("/tickets", auth, (req, res) =>
-  res.sendFile(path.join(viewsPath, "tickets.html"))
+  res.sendFile(path.join(publicPath, "tickets.html"))
 );
 app.get("/tickets.html", auth, (req, res) =>
-  res.sendFile(path.join(viewsPath, "tickets.html"))
+  res.sendFile(path.join(publicPath, "tickets.html"))
 );
 
 app.get("/contacts", auth, (req, res) =>
-  res.sendFile(path.join(viewsPath, "contacts.html"))
+  res.sendFile(path.join(publicPath, "contacts.html"))
 );
 app.get("/contacts.html", auth, (req, res) =>
-  res.sendFile(path.join(viewsPath, "contacts.html"))
+  res.sendFile(path.join(publicPath, "contacts.html"))
 );
 
 app.get("/plans", auth, (req, res) =>
-  res.sendFile(path.join(viewsPath, "plans.html"))
+  res.sendFile(path.join(publicPath, "plans.html"))
 );
 app.get("/plans.html", auth, (req, res) =>
-  res.sendFile(path.join(viewsPath, "plans.html"))
+  res.sendFile(path.join(publicPath, "plans.html"))
 );
 
 // ===============================
