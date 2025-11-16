@@ -144,13 +144,28 @@ app.get("/login", (req, res) =>
 app.get("/main", auth, (req, res) =>
   res.sendFile(path.join(viewsPath, "main.html"))
 );
+app.get("/main.html", auth, (req, res) =>
+  res.sendFile(path.join(viewsPath, "main.html"))
+);
+
 app.get("/tickets", auth, (req, res) =>
   res.sendFile(path.join(viewsPath, "tickets.html"))
 );
+app.get("/tickets.html", auth, (req, res) =>
+  res.sendFile(path.join(viewsPath, "tickets.html"))
+);
+
 app.get("/contacts", auth, (req, res) =>
   res.sendFile(path.join(viewsPath, "contacts.html"))
 );
+app.get("/contacts.html", auth, (req, res) =>
+  res.sendFile(path.join(viewsPath, "contacts.html"))
+);
+
 app.get("/plans", auth, (req, res) =>
+  res.sendFile(path.join(viewsPath, "plans.html"))
+);
+app.get("/plans.html", auth, (req, res) =>
   res.sendFile(path.join(viewsPath, "plans.html"))
 );
 
