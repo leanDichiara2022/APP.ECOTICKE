@@ -29,10 +29,10 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await fetch("/api/usuarios/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",   // 🔥🔥🔥 LA CLAVE PARA QUE ANDE
         body: JSON.stringify({ email, password, deviceId }),
       });
 
-      // Proteger JSON
       let result;
       try {
         result = await response.json();
@@ -41,8 +41,8 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       if (response.ok) {
-        // Guardar token y usuario
-        localStorage.setItem("token", result.token);
+        // Guardar token y usuario (opcional)
+        localStorage.setItem("token", result.token || "");
         localStorage.setItem("user", JSON.stringify(result.user));
 
         if (message) {
@@ -50,7 +50,6 @@ document.addEventListener("DOMContentLoaded", function () {
           message.className = "message success";
         }
 
-        // 👉 CORREGIDO: REDIRIGE A main.html
         setTimeout(() => {
           window.location.href = "/main.html";
         }, 1000);
