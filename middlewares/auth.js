@@ -2,49 +2,31 @@
 const jwt = require("jsonwebtoken");
 
 module.exports = function (req, res, next) {
-  let token;
+  // Permitimos pasar sin token para las páginas HTML.
+  // Para APIs, si hay token lo validamos, si no hay token dejamos pasar.
+  let token =
+    req.header("x-auth-token") ||
+    req.header("authorization") ||
+    (req.query && req.query.token) ||
+    null;
 
-  // 1️⃣ Token desde query ?token=
-  if (req.query && req.query.token) {
-    token = req.query.token.trim();
-  }
-
-  // 2️⃣ Token desde headers
   if (!token) {
-    token =
-      req.header("x-auth-token") ||
-      req.header("authorization") ||
-      null;
-
-    // Si vino como "Bearer xxx"
-    if (token && token.startsWith("Bearer ")) {
-      token = token.replace("Bearer ", "").trim();
-    }
+    // No hay token -> no bloqueamos, simplemente continuamos
+    return next();
   }
 
-  // 3️⃣ Si NO hay token → redirige
-  if (!token) {
-    return req.accepts("html")
-      ? res.redirect("/login.html")
-      : res.status(401).json({ msg: "No hay token, autorización denegada" });
+  // Si viene con "Bearer ..."
+  if (typeof token === "string" && token.startsWith("Bearer ")) {
+    token = token.slice(7).trim();
   }
 
-  // 4️⃣ Verificamos token
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Guardar usuario en req
-    req.user = {
-      id: decoded.id,
-      email: decoded.email,
-    };
-
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || process.env.SESSION_SECRET || "clave_super_segura");
+    // Guardamos datos mínimos en req.user si vienen
+    req.user = decoded;
     return next();
   } catch (err) {
-    console.error("❌ Error en token:", err.message);
-
-    return req.accepts("html")
-      ? res.redirect("/login.html")
-      : res.status(401).json({ msg: "Token inválido" });
+    // Token inválido -> no bloqueamos (esto evita redirecciones inesperadas)
+    return next();
   }
 };

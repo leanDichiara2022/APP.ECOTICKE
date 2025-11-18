@@ -1,6 +1,5 @@
 require("dotenv").config();
 const express = require("express");
-const fs = require("fs");
 const path = require("path");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -15,7 +14,7 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const isProduction = process.env.NODE_ENV === "production";
 
 // ===============================
-// 🔐 Middlewares base
+// Middlewares base
 // ===============================
 app.use(express.json({ limit: "500mb" }));
 app.use(express.urlencoded({ extended: true, limit: "500mb" }));
@@ -50,7 +49,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ===============================
-// 💾 Sesiones
+// Sesiones
 // ===============================
 app.set("trust proxy", 1);
 app.use(
@@ -67,7 +66,7 @@ app.use(
 );
 
 // ===============================
-// 🧠 MongoDB
+// MongoDB
 // ===============================
 mongoose
   .connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ecoticke")
@@ -75,13 +74,24 @@ mongoose
   .catch((err) => console.error("❌ Error al conectar a MongoDB:", err.message));
 
 // ===============================
-// 🌐 Archivos públicos
+// Paths públicos
 // ===============================
 const publicPath = path.join(__dirname, "public");
 app.use(express.static(publicPath));
 
 // ===============================
-// 📄 Rutas públicas
+// Middleware copia token desde query (opcional)
+// Si llega ?token=xxx lo copiamos a header x-auth-token para APIs que lo usen
+// ===============================
+app.use((req, res, next) => {
+  if (req.query && req.query.token && !req.headers["x-auth-token"]) {
+    req.headers["x-auth-token"] = req.query.token;
+  }
+  next();
+});
+
+// ===============================
+// Rutas públicas (HTML)
 // ===============================
 app.get("/", (req, res) => res.sendFile(path.join(publicPath, "index.html")));
 app.get("/register", (req, res) =>
@@ -92,39 +102,23 @@ app.get("/login", (req, res) =>
 );
 
 // ===============================
-// 🔓 TODAS LAS RUTAS HTML SIN AUTH
+// Rutas HTML (no requieren token / accesibles)
+// Nota: ya no usamos auth para redirigir; las rutas devuelven directamente
 // ===============================
-app.get("/main", (req, res) =>
-  res.sendFile(path.join(publicPath, "main.html"))
-);
-app.get("/main.html", (req, res) =>
-  res.sendFile(path.join(publicPath, "main.html"))
-);
+app.get("/main", (req, res) => res.sendFile(path.join(publicPath, "main.html")));
+app.get("/main.html", (req, res) => res.sendFile(path.join(publicPath, "main.html")));
 
-app.get("/tickets", (req, res) =>
-  res.sendFile(path.join(publicPath, "tickets.html"))
-);
-app.get("/tickets.html", (req, res) =>
-  res.sendFile(path.join(publicPath, "tickets.html"))
-);
+app.get("/tickets", (req, res) => res.sendFile(path.join(publicPath, "tickets.html")));
+app.get("/tickets.html", (req, res) => res.sendFile(path.join(publicPath, "tickets.html")));
 
-app.get("/contacts", (req, res) =>
-  res.sendFile(path.join(publicPath, "contacts.html"))
-);
-app.get("/contacts.html", (req, res) =>
-  res.sendFile(path.join(publicPath, "contacts.html"))
-);
+app.get("/contacts", (req, res) => res.sendFile(path.join(publicPath, "contacts.html")));
+app.get("/contacts.html", (req, res) => res.sendFile(path.join(publicPath, "contacts.html")));
 
-app.get("/plans", (req, res) =>
-  res.sendFile(path.join(publicPath, "plans.html"))
-);
-app.get("/plans.html", (req, res) =>
-  res.sendFile(path.join(publicPath, "plans.html"))
-);
+app.get("/plans", (req, res) => res.sendFile(path.join(publicPath, "plans.html")));
+app.get("/plans.html", (req, res) => res.sendFile(path.join(publicPath, "plans.html")));
 
 // ===============================
-// 💳 MercadoPago
-// ===============================
+// MercadoPago (mantener la configuración si existe)
 try {
   if (typeof mercadopago.configure === "function") {
     mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
@@ -137,7 +131,7 @@ try {
 }
 
 // ===============================
-// 🧩 Rutas API
+// Rutas API
 // ===============================
 try {
   app.use("/api/usuarios", require("./routes/usuarios"));
@@ -152,14 +146,14 @@ try {
 }
 
 // ===============================
-// 🩺 Health Check
+// Health check
 // ===============================
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK", message: "ECOTICKE Server Running" });
 });
 
 // ===============================
-// ⚠️ Fallback 404
+// Fallback 404
 // ===============================
 app.use((req, res) => {
   if (req.path.startsWith("/api/")) {
@@ -171,7 +165,7 @@ app.use((req, res) => {
 });
 
 // ===============================
-// 🚀 Iniciar servidor
+// Start
 // ===============================
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Servidor corriendo en http://0.0.0.0:${PORT}`);

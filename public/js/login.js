@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await fetch("/api/usuarios/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",   // 🔥🔥🔥 LA CLAVE PARA QUE ANDE
+        credentials: "include",   // importante para cookies si el backend setea cookie de sesión
         body: JSON.stringify({ email, password, deviceId }),
       });
 
@@ -42,18 +42,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (response.ok) {
         // Guardar token y usuario (opcional)
-        localStorage.setItem("token", result.token || "");
-        localStorage.setItem("user", JSON.stringify(result.user));
+        if (result.token) localStorage.setItem("token", result.token);
+        localStorage.setItem("user", JSON.stringify(result.user || {}));
 
         if (message) {
           message.textContent = "Inicio de sesión exitoso. Redirigiendo...";
           message.className = "message success";
         }
 
+        // Redirigimos directo a main.html sin token en la URL
         setTimeout(() => {
           window.location.href = "/main.html";
-        }, 1000);
-
+        }, 700);
       } else {
         if (message) {
           message.textContent = result.message || "Error al iniciar sesión.";
