@@ -84,8 +84,10 @@ app.use(express.static(publicPath));
 // ===============================
 // 🔑 Middleware global para token
 // ===============================
+// ⚡ FIX REAL
+// Si viene ?token= lo pasamos siempre al header x-auth-token
 app.use((req, res, next) => {
-  if (req.query.token && !req.headers["x-auth-token"]) {
+  if (req.query.token) {
     req.headers["x-auth-token"] = req.query.token;
   }
   next();
@@ -108,7 +110,7 @@ app.get("/login", (req, res) =>
 );
 
 // ===============================
-// 🔐 Rutas protegidas HTML (desde /public)
+// 🔐 Rutas protegidas HTML
 // ===============================
 app.get("/main", auth, (req, res) =>
   res.sendFile(path.join(publicPath, "main.html"))
