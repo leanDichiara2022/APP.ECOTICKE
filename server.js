@@ -50,7 +50,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ===============================
-// 💾 Sesiones y seguridad
+// 💾 Sesiones
 // ===============================
 app.set("trust proxy", 1);
 app.use(
@@ -75,28 +75,10 @@ mongoose
   .catch((err) => console.error("❌ Error al conectar a MongoDB:", err.message));
 
 // ===============================
-// 🌐 Paths
+// 🌐 Archivos públicos
 // ===============================
 const publicPath = path.join(__dirname, "public");
 app.use(express.static(publicPath));
-
-
-// ===============================
-// 🔑 Middleware global para token
-// ===============================
-// ⚡ FIX REAL
-// Si viene ?token= lo pasamos siempre al header x-auth-token
-app.use((req, res, next) => {
-  if (req.query.token) {
-    req.headers["x-auth-token"] = req.query.token;
-  }
-  next();
-});
-
-// ===============================
-// 🔐 Middleware auth real
-// ===============================
-const auth = require("./middlewares/auth");
 
 // ===============================
 // 📄 Rutas públicas
@@ -110,33 +92,33 @@ app.get("/login", (req, res) =>
 );
 
 // ===============================
-// 🔐 Rutas protegidas HTML
+// 🔓 TODAS LAS RUTAS HTML SIN AUTH
 // ===============================
-app.get("/main", auth, (req, res) =>
+app.get("/main", (req, res) =>
   res.sendFile(path.join(publicPath, "main.html"))
 );
-app.get("/main.html", auth, (req, res) =>
+app.get("/main.html", (req, res) =>
   res.sendFile(path.join(publicPath, "main.html"))
 );
 
-app.get("/tickets", auth, (req, res) =>
+app.get("/tickets", (req, res) =>
   res.sendFile(path.join(publicPath, "tickets.html"))
 );
-app.get("/tickets.html", auth, (req, res) =>
+app.get("/tickets.html", (req, res) =>
   res.sendFile(path.join(publicPath, "tickets.html"))
 );
 
-app.get("/contacts", auth, (req, res) =>
+app.get("/contacts", (req, res) =>
   res.sendFile(path.join(publicPath, "contacts.html"))
 );
-app.get("/contacts.html", auth, (req, res) =>
+app.get("/contacts.html", (req, res) =>
   res.sendFile(path.join(publicPath, "contacts.html"))
 );
 
-app.get("/plans", auth, (req, res) =>
+app.get("/plans", (req, res) =>
   res.sendFile(path.join(publicPath, "plans.html"))
 );
-app.get("/plans.html", auth, (req, res) =>
+app.get("/plans.html", (req, res) =>
   res.sendFile(path.join(publicPath, "plans.html"))
 );
 
