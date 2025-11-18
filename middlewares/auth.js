@@ -2,42 +2,49 @@
 const jwt = require("jsonwebtoken");
 
 module.exports = function (req, res, next) {
-  let token =
-    req.header("x-auth-token") ||
-    req.header("authorization") ||
-    req.query.token;
+  let token;
 
+  // 1️⃣ Token desde query ?token=
+  if (req.query && req.query.token) {
+    token = req.query.token.trim();
+  }
+
+  // 2️⃣ Token desde headers
   if (!token) {
-    if (req.accepts("html")) {
-      return res.redirect("/login.html");
-    } else {
-      return res
-        .status(401)
-        .json({ msg: "No hay token, autorización denegada" });
+    token =
+      req.header("x-auth-token") ||
+      req.header("authorization") ||
+      null;
+
+    // Si vino como "Bearer xxx"
+    if (token && token.startsWith("Bearer ")) {
+      token = token.replace("Bearer ", "").trim();
     }
   }
 
-  // Si viene con "Bearer XXX"
-  if (token.startsWith("Bearer ")) {
-    token = token.replace("Bearer ", "").trim();
+  // 3️⃣ Si NO hay token → redirige
+  if (!token) {
+    return req.accepts("html")
+      ? res.redirect("/login.html")
+      : res.status(401).json({ msg: "No hay token, autorización denegada" });
   }
 
+  // 4️⃣ Verificamos token
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 🔥 CORRECCIÓN IMPORTANTE:
-    // Guardamos lo que REALMENTE contiene el token
+    // Guardar usuario en req
     req.user = {
       id: decoded.id,
-      email: decoded.email
+      email: decoded.email,
     };
 
-    next();
+    return next();
   } catch (err) {
-    if (req.accepts("html")) {
-      return res.redirect("/login.html");
-    } else {
-      return res.status(401).json({ msg: "Token inválido" });
-    }
+    console.error("❌ Error en token:", err.message);
+
+    return req.accepts("html")
+      ? res.redirect("/login.html")
+      : res.status(401).json({ msg: "Token inválido" });
   }
 };
