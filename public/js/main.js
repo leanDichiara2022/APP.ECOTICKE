@@ -1,4 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    window.location.href = "/login.html";
+    return;
+  }
+
+document.addEventListener("DOMContentLoaded", () => {
   const sendWhatsappBtn = document.getElementById("sendWhatsappBtn");
   const sendEmailBtn = document.getElementById("sendEmailBtn");
   const searchClientBtn = document.getElementById("searchClient");

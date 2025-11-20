@@ -2,7 +2,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const loginForm = document.getElementById("loginForm");
   const message = document.getElementById("loginMessage");
 
-  // Generar o recuperar deviceId único
   let deviceId = localStorage.getItem("deviceId");
   if (!deviceId) {
     deviceId = crypto.randomUUID();
@@ -29,7 +28,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await fetch("/api/usuarios/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",   // importante para cookies si el backend setea cookie de sesión
+        credentials: "include",
         body: JSON.stringify({ email, password, deviceId }),
       });
 
@@ -37,12 +36,12 @@ document.addEventListener("DOMContentLoaded", function () {
       try {
         result = await response.json();
       } catch {
-        throw new Error("Respuesta del servidor no válida (HTML recibido).");
+        throw new Error("Respuesta del servidor no válida.");
       }
 
       if (response.ok) {
-        // Guardar token y usuario (opcional)
-        if (result.token) localStorage.setItem("token", result.token);
+        // GUARDAMOS EL TOKEN CORRECTAMENTE
+        if (result.token) localStorage.setItem("authToken", result.token);
         localStorage.setItem("user", JSON.stringify(result.user || {}));
 
         if (message) {
@@ -50,9 +49,8 @@ document.addEventListener("DOMContentLoaded", function () {
           message.className = "message success";
         }
 
-        // Redirigimos directo a main.html sin token en la URL
         setTimeout(() => {
-          window.location.href = "/main.html";
+          window.location.href = "/main";
         }, 700);
       } else {
         if (message) {
