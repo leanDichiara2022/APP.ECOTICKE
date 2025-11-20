@@ -1,4 +1,3 @@
-// routes/usuarios.js
 const express = require("express");
 const Usuario = require("../models/usuarios");
 const bcrypt = require("bcryptjs");
@@ -10,7 +9,7 @@ const router = express.Router();
 // ------------------ REGISTRO DE USUARIO ------------------
 router.post("/register", async (req, res) => {
   try {
-    const { nombre, email, password, deviceId } = req.body;
+    const { nombre, email, password } = req.body;
 
     if (!nombre || !email || !password) {
       logger.warn("Intento de registro incompleto", { email });
@@ -30,15 +29,8 @@ router.post("/register", async (req, res) => {
     const newUser = new Usuario({
       nombre,
       email: emailLower,
-      password: hashedPassword,
-      plan: { tipo: "personal", estado: "prueba" },
-      allowedDevices: 1,
-      devices: []
+      password: hashedPassword
     });
-
-    if (deviceId) {
-      newUser.devices.push({ deviceId, lastUsed: new Date() });
-    }
 
     await newUser.save();
 
@@ -53,11 +45,11 @@ router.post("/register", async (req, res) => {
 // ------------------ INICIO DE SESIÓN ------------------
 router.post("/login", async (req, res) => {
   try {
-    const { email, password, deviceId } = req.body;
+    const { email, password } = req.body;
 
-    if (!email || !password || !deviceId) {
-      logger.warn("Intento de login con campos incompletos", { email, deviceId });
-      return res.status(400).json({ message: "Email, contraseña y deviceId son obligatorios." });
+    if (!email || !password) {
+      logger.warn("Intento de login con campos incompletos", { email });
+      return res.status(400).json({ message: "Email y contraseña son obligatorios." });
     }
 
     const emailLower = email.toLowerCase();
@@ -74,28 +66,6 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Contraseña incorrecta." });
     }
 
-    const maxDevices = user.allowedDevices || 1;
-    const existingDevice = user.devices.find(d => d.deviceId === deviceId);
-
-    if (!existingDevice) {
-      if (user.devices.length >= maxDevices) {
-        logger.warn("Límite de dispositivos alcanzado", {
-          userId: user._id,
-          email: emailLower,
-          deviceId
-        });
-        return res.status(403).json({
-          message: `Límite de dispositivos alcanzado. Plan permite ${maxDevices} dispositivos.`
-        });
-      }
-
-      user.devices.push({ deviceId, lastUsed: new Date() });
-    } else {
-      existingDevice.lastUsed = new Date();
-    }
-
-    await user.save();
-
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET,
@@ -104,7 +74,7 @@ router.post("/login", async (req, res) => {
 
     const { password: _, ...userWithoutPassword } = user.toObject();
 
-    logger.info("Inicio de sesión exitoso", { userId: user._id, deviceId });
+    logger.info("Inicio de sesión exitoso", { userId: user._id });
     res.status(200).json({
       message: "Inicio de sesión exitoso.",
       token,
@@ -119,31 +89,7 @@ router.post("/login", async (req, res) => {
 // ------------------ CIERRE DE SESIÓN ------------------
 router.post("/logout", async (req, res) => {
   try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
-    const deviceId = req.header("x-device-id");
-
-    if (!token || !deviceId) {
-      return res.status(400).json({ message: "Token y deviceId son obligatorios." });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await Usuario.findById(decoded.id);
-
-    if (!user) {
-      return res.status(401).json({ message: "Usuario no encontrado." });
-    }
-
-    // ⚡ FIX IMPORTANTE: eliminar SOLO ese deviceId sin romper otros dispositivos
-    user.devices = user.devices.filter(d => d.deviceId !== deviceId);
-
-    await user.save();
-
-    logger.info("Cierre de sesión exitoso", {
-      userId: user._id,
-      email: user.email,
-      deviceId
-    });
-
+    logger.info("Logout ejecutado correctamente");
     res.json({ message: "Cierre de sesión exitoso." });
   } catch (error) {
     logger.error("Error en logout", { error: error.message });
