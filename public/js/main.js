@@ -1,12 +1,15 @@
+// public/js/main.js
 document.addEventListener("DOMContentLoaded", () => {
-  // ====== 🔐 VERIFICAR TOKEN ======
+  // Autenticación: revisar token en localStorage
   const token = localStorage.getItem("authToken");
   if (!token) {
+    // Si no hay token, vamos al login (limpiamos por las dudas)
+    localStorage.removeItem("user");
+    localStorage.removeItem("authToken");
     window.location.href = "/login.html";
     return;
   }
 
-  // ====== ELEMENTOS DEL DOM ======
   const sendWhatsappBtn = document.getElementById("sendWhatsappBtn");
   const sendEmailBtn = document.getElementById("sendEmailBtn");
   const searchClientBtn = document.getElementById("searchClient");
@@ -15,11 +18,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailsInput = document.getElementById("extraDetails");
   const fileInput = document.getElementById("archivo");
   const pdfMessage = document.getElementById("pdfMessage");
-
   const previewContainer = document.createElement("div");
   previewContainer.id = "pdfPreviewContainer";
   previewContainer.className = "preview-box hidden";
-  document.querySelector(".upload-section").appendChild(previewContainer);
+
+  const uploadSection = document.querySelector(".upload-section");
+  if (uploadSection) uploadSection.appendChild(previewContainer);
 
   // =====================================================
   // 📑 Subida y vista previa automática
@@ -29,24 +33,29 @@ document.addEventListener("DOMContentLoaded", () => {
       const file = e.target.files[0];
       if (!file) return;
 
-      pdfMessage.textContent = "⏳ Subiendo archivo...";
-      pdfMessage.style.color = "#555";
+      if (pdfMessage) {
+        pdfMessage.textContent = "⏳ Subiendo archivo...";
+        pdfMessage.style.color = "#555";
+      }
 
       const formData = new FormData();
       formData.append("archivo", file);
 
       try {
-        const token = localStorage.getItem("authToken");
-
+        const authToken = localStorage.getItem("authToken");
         const res = await fetch("/api/pdf/upload", {
           method: "POST",
           body: formData,
-          headers: token ? { "x-auth-token": token } : undefined,
+          headers: authToken ? { "x-auth-token": authToken } : undefined,
         });
 
         if (res.status === 401) {
-          pdfMessage.textContent = "⚠️ Sesión expirada. Volvé a iniciar sesión.";
-          pdfMessage.style.color = "red";
+          if (pdfMessage) {
+            pdfMessage.textContent = "⚠️ Sesión expirada. Volvé a iniciar sesión.";
+            pdfMessage.style.color = "red";
+          }
+          localStorage.removeItem("authToken");
+          setTimeout(() => (window.location.href = "/login.html"), 800);
           return;
         }
 
@@ -54,28 +63,38 @@ document.addEventListener("DOMContentLoaded", () => {
         let data;
         try {
           data = JSON.parse(text);
-        } catch {
-          console.error("Respuesta inválida del backend:", text);
-          pdfMessage.textContent = "❌ Error al subir archivo (respuesta inválida)";
-          pdfMessage.style.color = "red";
+        } catch (err) {
+          console.error("Respuesta inválida:", text);
+          if (pdfMessage) {
+            pdfMessage.textContent = "❌ Error al subir archivo (respuesta inválida)";
+            pdfMessage.style.color = "red";
+          }
           return;
         }
 
         if (res.ok && data.fileName) {
           localStorage.setItem("lastUploadedFile", data.fileName);
-          pdfMessage.textContent = "✅ Archivo subido correctamente";
-          pdfMessage.style.color = "green";
-
-          if (data.url) showPDFPreview(data.url);
-          else previewContainer.classList.add("hidden");
+          if (pdfMessage) {
+            pdfMessage.textContent = "✅ Archivo subido correctamente";
+            pdfMessage.style.color = "green";
+          }
+          if (data.url) {
+            showPDFPreview(data.url);
+          } else {
+            previewContainer.classList.add("hidden");
+          }
         } else {
-          pdfMessage.textContent = "❌ Error al subir archivo: " + (data.error || "");
-          pdfMessage.style.color = "red";
+          if (pdfMessage) {
+            pdfMessage.textContent = "❌ Error al subir archivo: " + (data.error || "Error desconocido");
+            pdfMessage.style.color = "red";
+          }
         }
       } catch (err) {
-        console.error("Error al subir archivo:", err);
-        pdfMessage.textContent = "❌ Error de conexión al subir archivo";
-        pdfMessage.style.color = "red";
+        console.error(err);
+        if (pdfMessage) {
+          pdfMessage.textContent = "❌ Error al subir archivo";
+          pdfMessage.style.color = "red";
+        }
       }
     });
   }
@@ -93,9 +112,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sendWhatsappBtn) {
     sendWhatsappBtn.addEventListener("click", async (e) => {
       e.preventDefault();
-      const countryCode = document.getElementById("countryCode").value;
-      const phone = phoneInput.value.trim();
-      const details = detailsInput.value;
+      const countryCodeElem = document.getElementById("countryCode");
+      const countryCode = countryCodeElem ? countryCodeElem.value : "";
+      const phone = phoneInput ? phoneInput.value.trim() : "";
+      const details = detailsInput ? detailsInput.value : "";
       const fileName = localStorage.getItem("lastUploadedFile");
 
       if (!phone || !fileName) {
@@ -115,23 +135,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await res.json();
         if (res.ok) {
           showToast("📲 Enlace de WhatsApp generado con éxito", "success");
-
           localStorage.setItem(
             "lastSentContact",
             JSON.stringify({
               phone,
-              email: emailInput.value,
+              email: emailInput ? emailInput.value : "",
               details,
               fileName,
             })
           );
-
           if (data.whatsappLink) window.open(data.whatsappLink, "_blank");
         } else {
           showToast("❌ Error al generar el link de WhatsApp", "error");
         }
       } catch (error) {
-        console.error("Error enviando WhatsApp:", error);
+        console.error(error);
         showToast("❌ No se pudo enviar por WhatsApp", "error");
       }
     });
@@ -143,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sendEmailBtn) {
     sendEmailBtn.addEventListener("click", async (e) => {
       e.preventDefault();
-      const email = emailInput.value.trim();
+      const email = emailInput ? emailInput.value.trim() : "";
       const fileName = localStorage.getItem("lastUploadedFile");
 
       if (!email || !fileName) {
@@ -161,13 +179,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await res.json();
         if (res.ok) {
           showToast("📧 Correo enviado con éxito!", "success");
-
           localStorage.setItem(
             "lastSentContact",
             JSON.stringify({
-              phone: phoneInput.value,
+              phone: phoneInput ? phoneInput.value : "",
               email,
-              details: detailsInput.value,
+              details: detailsInput ? detailsInput.value : "",
               fileName,
             })
           );
@@ -175,14 +192,14 @@ document.addEventListener("DOMContentLoaded", () => {
           showToast("❌ Error al enviar correo: " + (data.error || ""), "error");
         }
       } catch (error) {
-        console.error("Error enviando correo:", error);
+        console.error(error);
         showToast("❌ No se pudo enviar por correo", "error");
       }
     });
   }
 
   // =====================================================
-  // 🔎 Buscar Cliente
+  // 🔎 Buscar Cliente (autocompletar)
   // =====================================================
   const searchResultsContainer = document.createElement("div");
   searchResultsContainer.id = "searchResultsContainer";
@@ -199,13 +216,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.body.appendChild(searchResultsContainer);
 
-  function positionResultsContainer(input) {
-    const rect = input.getBoundingClientRect();
-    searchResultsContainer.style.top = rect.bottom + window.scrollY + "px";
-    searchResultsContainer.style.left = rect.left + window.scrollX + "px";
-    searchResultsContainer.style.width = rect.width + "px";
-  }
-
   async function searchClients(query) {
     try {
       const res = await fetch(`/api/contacts/search?query=${encodeURIComponent(query)}`);
@@ -215,6 +225,13 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error buscando cliente:", error);
       return [];
     }
+  }
+
+  function positionResultsContainer(input) {
+    const rect = input.getBoundingClientRect();
+    searchResultsContainer.style.top = rect.bottom + window.scrollY + "px";
+    searchResultsContainer.style.left = rect.left + window.scrollX + "px";
+    searchResultsContainer.style.width = rect.width + "px";
   }
 
   function showResults(contacts, input) {
@@ -231,21 +248,14 @@ document.addEventListener("DOMContentLoaded", () => {
         cursor: "pointer",
         borderBottom: "1px solid #eee",
       });
-
-      item.innerText = `${contact.name || "Sin Nombre"} - ${contact.phone || "-"} - ${
-        contact.email || "-"
-      }`;
-
+      item.innerText = `${contact.name || "Sin Nombre"} - ${contact.phone || "-"} - ${contact.email || "-"}`;
       item.addEventListener("click", () => {
-        phoneInput.value = contact.phone || "";
-        emailInput.value = contact.email || "";
-        detailsInput.value = contact.extraDetails || "";
-
+        if (phoneInput) phoneInput.value = contact.phone || "";
+        if (emailInput) emailInput.value = contact.email || "";
+        if (detailsInput) detailsInput.value = contact.extraDetails || "";
         searchResultsContainer.style.display = "none";
-
-        showToast(`✅ Contacto seleccionado: ${contact.name || "Desconocido"}`, "success");
+        showToast(`✅ Contacto seleccionado`, "success");
       });
-
       searchResultsContainer.appendChild(item);
     });
 
@@ -255,41 +265,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   [phoneInput, emailInput].forEach((input) => {
     if (!input) return;
-
     input.addEventListener("input", async () => {
       const query = input.value.trim();
       if (!query) {
         searchResultsContainer.style.display = "none";
         return;
       }
-
       const contacts = await searchClients(query);
       showResults(contacts, input);
     });
   });
 
-  if (searchClientBtn) {
-    searchClientBtn.addEventListener("click", async (e) => {
-      e.preventDefault();
-
-      const query = phoneInput.value.trim() || emailInput.value.trim();
-      if (!query) {
-        showToast("⚠️ Ingresa un teléfono o correo para buscar.", "error");
-        return;
-      }
-
-      const contacts = await searchClients(query);
-      showResults(contacts, phoneInput);
-    });
-  }
-
   document.addEventListener("click", (e) => {
-    if (
-      !searchResultsContainer.contains(e.target) &&
-      e.target !== searchClientBtn &&
-      e.target !== phoneInput &&
-      e.target !== emailInput
-    ) {
+    if (!searchResultsContainer.contains(e.target)) {
       searchResultsContainer.style.display = "none";
     }
   });
@@ -305,5 +293,30 @@ document.addEventListener("DOMContentLoaded", () => {
       showToast("👋 Sesión cerrada correctamente", "success");
       setTimeout(() => (window.location.href = "/login.html"), 1000);
     });
+  }
+
+  // Helper: showToast (si ya la tenés, no importa, esta es fallback)
+  function showToast(msg, type = "info") {
+    // Si tu app ya tiene un showToast global, esta función se queda silenciosa
+    if (typeof window.showToast === "function") {
+      window.showToast(msg, type);
+      return;
+    }
+    // Fallback simple:
+    const el = document.createElement("div");
+    el.textContent = msg;
+    Object.assign(el.style, {
+      position: "fixed",
+      right: "20px",
+      bottom: "20px",
+      padding: "10px 14px",
+      background: "#222",
+      color: "#fff",
+      borderRadius: "6px",
+      zIndex: 9999,
+      opacity: 0.95,
+    });
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3500);
   }
 });

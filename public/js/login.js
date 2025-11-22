@@ -1,12 +1,22 @@
+// public/js/login.js
 document.addEventListener("DOMContentLoaded", function () {
   const loginForm = document.getElementById("loginForm");
   const message = document.getElementById("loginMessage");
 
+  // Generar o recuperar deviceId único
   let deviceId = localStorage.getItem("deviceId");
   if (!deviceId) {
-    deviceId = crypto.randomUUID();
+    // crypto.randomUUID() es soportado en la mayoría de navegadores modernos
+    try {
+      deviceId = crypto.randomUUID();
+    } catch {
+      // fallback sencillo si no existe randomUUID
+      deviceId = 'dev-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+    }
     localStorage.setItem("deviceId", deviceId);
   }
+
+  if (!loginForm) return;
 
   loginForm.addEventListener("submit", async function (e) {
     e.preventDefault();
@@ -40,7 +50,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       if (response.ok) {
-        // GUARDAMOS EL TOKEN CORRECTAMENTE
+        // GUARDAMOS EL TOKEN CORRECTAMENTE (clave: authToken)
         if (result.token) localStorage.setItem("authToken", result.token);
         localStorage.setItem("user", JSON.stringify(result.user || {}));
 
@@ -49,9 +59,10 @@ document.addEventListener("DOMContentLoaded", function () {
           message.className = "message success";
         }
 
+        // Redirigir limpiamente a main.html (sin mostrar token)
         setTimeout(() => {
-          window.location.href = "/main";
-        }, 700);
+          window.location.href = "/main.html";
+        }, 500);
       } else {
         if (message) {
           message.textContent = result.message || "Error al iniciar sesión.";

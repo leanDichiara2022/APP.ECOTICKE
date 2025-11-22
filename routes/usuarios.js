@@ -1,3 +1,4 @@
+// routes/usuarios.js
 const express = require("express");
 const Usuario = require("../models/usuarios");
 const bcrypt = require("bcryptjs");
@@ -9,7 +10,7 @@ const router = express.Router();
 // ------------------ REGISTRO DE USUARIO ------------------
 router.post("/register", async (req, res) => {
   try {
-    const { nombre, email, password } = req.body;
+    const { nombre, email, password, deviceId } = req.body;
 
     if (!nombre || !email || !password) {
       logger.warn("Intento de registro incompleto", { email });
@@ -29,8 +30,15 @@ router.post("/register", async (req, res) => {
     const newUser = new Usuario({
       nombre,
       email: emailLower,
-      password: hashedPassword
+      password: hashedPassword,
+      plan: { tipo: "personal", estado: "prueba" },
+      // allowedDevices por defecto lo maneja el modelo
+      devices: []
     });
+
+    if (deviceId) {
+      newUser.devices.push({ deviceId, lastUsed: new Date() });
+    }
 
     await newUser.save();
 
@@ -45,10 +53,10 @@ router.post("/register", async (req, res) => {
 // ------------------ INICIO DE SESIÓN ------------------
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, deviceId } = req.body;
 
     if (!email || !password) {
-      logger.warn("Intento de login con campos incompletos", { email });
+      logger.warn("Intento de login con campos incompletos", { email, deviceId });
       return res.status(400).json({ message: "Email y contraseña son obligatorios." });
     }
 
@@ -66,6 +74,19 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Contraseña incorrecta." });
     }
 
+    // --- Cambiado: ya NO bloqueamos por límite de dispositivos ---
+    // Si deviceId llega, actualizamos/insertamos en user.devices sin negar el acceso.
+    if (deviceId) {
+      const existingDevice = user.devices.find(d => d.deviceId === deviceId);
+      if (!existingDevice) {
+        user.devices.push({ deviceId, lastUsed: new Date() });
+      } else {
+        existingDevice.lastUsed = new Date();
+      }
+    }
+
+    await user.save();
+
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET,
@@ -74,7 +95,7 @@ router.post("/login", async (req, res) => {
 
     const { password: _, ...userWithoutPassword } = user.toObject();
 
-    logger.info("Inicio de sesión exitoso", { userId: user._id });
+    logger.info("Inicio de sesión exitoso", { userId: user._id, deviceId });
     res.status(200).json({
       message: "Inicio de sesión exitoso.",
       token,
@@ -89,7 +110,31 @@ router.post("/login", async (req, res) => {
 // ------------------ CIERRE DE SESIÓN ------------------
 router.post("/logout", async (req, res) => {
   try {
-    logger.info("Logout ejecutado correctamente");
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    const deviceId = req.header("x-device-id");
+
+    if (!token || !deviceId) {
+      return res.status(400).json({ message: "Token y deviceId son obligatorios." });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await Usuario.findById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({ message: "Usuario no encontrado." });
+    }
+
+    // ⚡ eliminar SOLO ese deviceId sin romper otros dispositivos
+    user.devices = user.devices.filter(d => d.deviceId !== deviceId);
+
+    await user.save();
+
+    logger.info("Cierre de sesión exitoso", {
+      userId: user._id,
+      email: user.email,
+      deviceId
+    });
+
     res.json({ message: "Cierre de sesión exitoso." });
   } catch (error) {
     logger.error("Error en logout", { error: error.message });
