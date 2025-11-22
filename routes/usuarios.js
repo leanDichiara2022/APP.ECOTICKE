@@ -32,7 +32,7 @@ router.post("/register", async (req, res) => {
       email: emailLower,
       password: hashedPassword,
       plan: { tipo: "personal", estado: "prueba" },
-      // allowedDevices por defecto lo maneja el modelo
+      allowedDevices: 9999,
       devices: []
     });
 
@@ -74,18 +74,18 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Contraseña incorrecta." });
     }
 
-    // --- Cambiado: ya NO bloqueamos por límite de dispositivos ---
-    // Si deviceId llega, actualizamos/insertamos en user.devices sin negar el acceso.
-    if (deviceId) {
+    // No bloquear por límite de dispositivos: agregamos device si no existe
+    try {
       const existingDevice = user.devices.find(d => d.deviceId === deviceId);
-      if (!existingDevice) {
+      if (!existingDevice && deviceId) {
         user.devices.push({ deviceId, lastUsed: new Date() });
-      } else {
+      } else if (existingDevice) {
         existingDevice.lastUsed = new Date();
       }
+      await user.save();
+    } catch (err) {
+      logger.warn("No se pudo actualizar devices, continua login", { err: err.message });
     }
-
-    await user.save();
 
     const token = jwt.sign(
       { id: user._id, email: user.email },
@@ -124,9 +124,8 @@ router.post("/logout", async (req, res) => {
       return res.status(401).json({ message: "Usuario no encontrado." });
     }
 
-    // ⚡ eliminar SOLO ese deviceId sin romper otros dispositivos
+    // eliminar solo el deviceId
     user.devices = user.devices.filter(d => d.deviceId !== deviceId);
-
     await user.save();
 
     logger.info("Cierre de sesión exitoso", {

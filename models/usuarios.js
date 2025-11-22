@@ -41,7 +41,7 @@ const UsuarioSchema = new mongoose.Schema({
     },
     allowedDevices: {
         type: Number,
-        default: 999 // Por ahora amplio para evitar bloqueo por dispositivos; ajustar según planes luego
+        default: 9999 // sin restricción para la versión gratuita
     },
     devices: [
         {
@@ -64,7 +64,11 @@ UsuarioSchema.methods.addDevice = function (deviceId) {
     const maxDevices = this.allowedDevices;
 
     if (!existingDevice) {
-        if (this.devices.length >= maxDevices) return false;
+        if (this.devices.length >= maxDevices) {
+            // ya no bloqueamos: permitimos seguir (o podrías aumentar allowedDevices)
+            // devolveremos true pero no agregamos si excede por seguridad
+            return false;
+        }
         this.devices.push({ deviceId, lastUsed: new Date() });
     } else {
         existingDevice.lastUsed = new Date();

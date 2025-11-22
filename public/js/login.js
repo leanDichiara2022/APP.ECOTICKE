@@ -6,17 +6,14 @@ document.addEventListener("DOMContentLoaded", function () {
   // Generar o recuperar deviceId único
   let deviceId = localStorage.getItem("deviceId");
   if (!deviceId) {
-    // crypto.randomUUID() es soportado en la mayoría de navegadores modernos
     try {
       deviceId = crypto.randomUUID();
-    } catch {
-      // fallback sencillo si no existe randomUUID
-      deviceId = 'dev-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+    } catch (e) {
+      // fallback para navegadores antiguos
+      deviceId = "device-" + Date.now() + "-" + Math.random().toString(36).slice(2);
     }
     localStorage.setItem("deviceId", deviceId);
   }
-
-  if (!loginForm) return;
 
   loginForm.addEventListener("submit", async function (e) {
     e.preventDefault();
@@ -50,7 +47,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       if (response.ok) {
-        // GUARDAMOS EL TOKEN CORRECTAMENTE (clave: authToken)
+        // Guardar token en localStorage bajo la clave "authToken"
         if (result.token) localStorage.setItem("authToken", result.token);
         localStorage.setItem("user", JSON.stringify(result.user || {}));
 
@@ -59,7 +56,7 @@ document.addEventListener("DOMContentLoaded", function () {
           message.className = "message success";
         }
 
-        // Redirigir limpiamente a main.html (sin mostrar token)
+        // Redirigir a main.html (sin token en URL — veremos en main.js si aparece token externo)
         setTimeout(() => {
           window.location.href = "/main.html";
         }, 500);
