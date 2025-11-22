@@ -74,51 +74,31 @@ mongoose
   .catch((err) => console.error("❌ Error al conectar a MongoDB:", err.message));
 
 // ===============================
-// Paths públicos
+// Static public folder
 // ===============================
 const publicPath = path.join(__dirname, "public");
 app.use(express.static(publicPath));
 
 // ===============================
-// Middleware copia token desde query (opcional)
-// Si llega ?token=xxx lo copiamos a header x-auth-token para APIs que lo usen
+// ❌ ELIMINADO — Manejo de token por Query
 // ===============================
-app.use((req, res, next) => {
-  if (req.query && req.query.token && !req.headers["x-auth-token"]) {
-    req.headers["x-auth-token"] = req.query.token;
-  }
-  next();
-});
 
 // ===============================
-// Rutas públicas (HTML)
+// Rutas HTML
 // ===============================
-app.get("/", (req, res) => res.sendFile(path.join(publicPath, "index.html")));
-app.get("/register", (req, res) =>
-  res.sendFile(path.join(publicPath, "register.html"))
-);
-app.get("/login", (req, res) =>
-  res.sendFile(path.join(publicPath, "login.html"))
-);
+const html = (file) => path.join(publicPath, file);
 
-// ===============================
-// Rutas HTML (no requieren token / accesibles)
-// Nota: ya no usamos auth para redirigir; las rutas devuelven directamente
-// ===============================
-app.get("/main", (req, res) => res.sendFile(path.join(publicPath, "main.html")));
-app.get("/main.html", (req, res) => res.sendFile(path.join(publicPath, "main.html")));
-
-app.get("/tickets", (req, res) => res.sendFile(path.join(publicPath, "tickets.html")));
-app.get("/tickets.html", (req, res) => res.sendFile(path.join(publicPath, "tickets.html")));
-
-app.get("/contacts", (req, res) => res.sendFile(path.join(publicPath, "contacts.html")));
-app.get("/contacts.html", (req, res) => res.sendFile(path.join(publicPath, "contacts.html")));
-
-app.get("/plans", (req, res) => res.sendFile(path.join(publicPath, "plans.html")));
-app.get("/plans.html", (req, res) => res.sendFile(path.join(publicPath, "plans.html")));
+app.get("/", (req, res) => res.sendFile(html("index.html")));
+app.get("/login", (req, res) => res.sendFile(html("login.html")));
+app.get("/register", (req, res) => res.sendFile(html("register.html")));
+app.get("/main", (req, res) => res.sendFile(html("main.html")));
+app.get("/tickets", (req, res) => res.sendFile(html("tickets.html")));
+app.get("/contacts", (req, res) => res.sendFile(html("contacts.html")));
+app.get("/plans", (req, res) => res.sendFile(html("plans.html")));
 
 // ===============================
-// MercadoPago (mantener la configuración si existe)
+// MercadoPago
+// ===============================
 try {
   if (typeof mercadopago.configure === "function") {
     mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
@@ -131,7 +111,7 @@ try {
 }
 
 // ===============================
-// Rutas API
+// API Routes
 // ===============================
 try {
   app.use("/api/usuarios", require("./routes/usuarios"));
@@ -156,12 +136,7 @@ app.get("/health", (req, res) => {
 // Fallback 404
 // ===============================
 app.use((req, res) => {
-  if (req.path.startsWith("/api/")) {
-    return res.status(404).json({ message: "Endpoint no encontrado" });
-  }
-  res.status(404).sendFile(path.join(publicPath, "404.html"), (err) => {
-    if (err) res.status(404).send("Not Found");
-  });
+  res.status(404).sendFile(html("404.html"));
 });
 
 // ===============================
