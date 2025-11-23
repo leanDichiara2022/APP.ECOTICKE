@@ -24,7 +24,7 @@ exports.register = async (req, res) => {
       email: normalizedEmail,
       password: hashedPassword,
       plan,
-      devices: [] // lista de dispositivos activos
+      devices: []
     });
 
     await usuario.save();
@@ -57,8 +57,9 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Credenciales incorrectas.' });
     }
 
-    // Validar límite de dispositivos según el plan
-    const allowedDevices = usuario.plan === 'empresa' ? usuario.allowedDevices || 100 : 1; // empresa ilimitado o definido
+    // Validar dispositivos
+    const allowedDevices = usuario.plan === 'empresa' ? usuario.allowedDevices || 100 : 1;
+
     if (!usuario.devices.includes(deviceId) && usuario.devices.length >= allowedDevices) {
       return res.status(403).json({
         message: `Has alcanzado el límite de dispositivos permitidos (${allowedDevices}).`,
@@ -68,13 +69,22 @@ exports.login = async (req, res) => {
     if (!usuario.devices.includes(deviceId)) usuario.devices.push(deviceId);
     await usuario.save();
 
+    // Generar token
     const token = jwt.sign(
       { id: usuario._id, email: usuario.email, deviceId },
       process.env.SESSION_SECRET,
       { expiresIn: '8h' }
     );
 
-    res.cookie('token', token, { httpOnly: true, secure: false }); // secure: true si usas HTTPS
+    // 🔥 COOKIE CORREGIDA 🔥
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: true,       // Ecoticke usa HTTPS
+      sameSite: "none",   // Chrome lo exige si secure = true
+      path: "/",
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 días
+    });
+
     res.json({
       message: 'Inicio de sesión exitoso.',
       token,
@@ -109,7 +119,13 @@ exports.logout = async (req, res) => {
       }
     }
 
-    res.clearCookie('token');
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/"
+    });
+
     res.json({ message: 'Sesión cerrada exitosamente.' });
   } catch (error) {
     console.error('❌ Error al cerrar sesión:', error);
