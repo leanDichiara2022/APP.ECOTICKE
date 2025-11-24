@@ -94,7 +94,8 @@ app.get("/register", (req, res) => res.sendFile(html("register.html")));
 app.get("/main", (req, res) => res.sendFile(html("main.html")));
 app.get("/tickets", (req, res) => res.sendFile(html("tickets.html")));
 app.get("/contacts", (req, res) => res.sendFile(html("contacts.html")));
-app.get("/plans", (req, res) => res.sendFile(html("plans.html")));
+app.get("/plans", (req, res) => res.sendFile(html("planes.html")));
+
 
 // ===============================
 // MercadoPago
