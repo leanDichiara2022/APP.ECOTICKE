@@ -39,47 +39,54 @@
           <option value="en">English</option>
           <option value="pt">Português</option>
         </select>
-        <button class="logout-button" onclick="logout()" data-i18n="logout_button">Cerrar sesión</button>
+        <button type="button" class="logout-button" onclick="logout()" data-i18n="logout_button">Cerrar sesión</button>
       </div>
     </header>
 
     <main>
       <!-- Formulario de subida de archivo -->
       <section class="upload-section">
-       <form id="pdfForm" enctype="multipart/form-data" novalidate>
-  <label for="archivo" class="file-label">Seleccionar archivo:</label>
-  <input type="file" id="archivo" name="archivo" accept="*/*" />
-</form>
-<p style="font-size: 0.9em; margin-top: 5px; color: #666;">
-  Podés subir cualquier archivo. Si no es PDF.
-</p>
-<p id="pdfMessage" style="margin-top: 10px;"></p>
-      <!-- Selector de Plantillas -->
-      <section class="template-section">
-        <h2 data-i18n="template_heading">Elegir Plantilla</h2>
-        <div class="template-options">
-          <label for="templateSelect" data-i18n="template_label">Selecciona una plantilla predefinida:</label>
-          <select id="templateSelect">
-            <option value="factura_detallada">Detallada</option>
-            <option value="factura_simple">Simple</option>
-            <option value="factura_editable">Editable</option>
-            <option value="pdf_template_2">PDF Template 2</option>
-          </select>
+        <form id="pdfForm" enctype="multipart/form-data" novalidate>
+          <label for="archivo" class="file-label">Seleccionar archivo:</label>
+          <input type="file" id="archivo" name="archivo" accept="*/*" />
+        </form>
+        <p style="font-size: 0.9em; margin-top: 5px; color: #666;">
+          Podés subir cualquier archivo. Si no es PDF.
+        </p>
+        <p id="pdfMessage" style="margin-top: 10px;"></p>
+
+        <!-- Preview contenedor (para el archivo subido) -->
+        <div id="uploadedPreview" class="preview-box hidden" style="margin-top:8px;">
+          <iframe id="uploadedIframe" sandbox></iframe>
         </div>
-        <div class="upload-template">
-          <label for="customTemplate" class="file-label" data-i18n="template_custom_label">O subir tu propia plantilla:</label>
-          <input type="file" id="customTemplate" name="customTemplate" accept=".html,.pdf" />
-        </div>
-        <div class="preview-actions">
-          <button id="previewTemplateBtn" class="btn-preview">Vista previa</button>
-        </div>
-        <div id="templatePreview" class="preview-box hidden">
-          <iframe id="templateIframe"></iframe>
-        </div>
+
+        <!-- Selector de Plantillas -->
+        <section class="template-section" style="margin-top:18px;">
+          <h2 data-i18n="template_heading">Elegir Plantilla</h2>
+          <div class="template-options">
+            <label for="templateSelect" data-i18n="template_label">Selecciona una plantilla predefinida:</label>
+            <select id="templateSelect">
+              <option value="factura_detallada">Detallada</option>
+              <option value="factura_simple">Simple</option>
+              <option value="factura_editable">Editable</option>
+              <option value="pdf_template_2">PDF Template 2</option>
+            </select>
+          </div>
+          <div class="upload-template" style="margin-top:8px;">
+            <label for="customTemplate" class="file-label" data-i18n="template_custom_label">O subir tu propia plantilla:</label>
+            <input type="file" id="customTemplate" name="customTemplate" accept=".html,.pdf" />
+          </div>
+          <div class="preview-actions">
+            <button id="previewTemplateBtn" type="button" class="btn-preview">Vista previa</button>
+          </div>
+          <div id="templatePreview" class="preview-box hidden" style="margin-top:8px;">
+            <iframe id="templateIframe" sandbox></iframe>
+          </div>
+        </section>
       </section>
 
       <!-- Formulario de envío -->
-      <section class="send-ticket-section">
+      <section class="send-ticket-section" style="margin-top:18px;">
         <div class="input-group">
           <label for="countryCode" data-i18n="label_country">Código País:</label>
           <select id="countryCode">
@@ -89,35 +96,30 @@
           </select>
         </div>
 
-        <div class="input-group">
+        <div class="input-group" style="margin-top:8px;">
           <label for="phoneNumber" data-i18n="label_phone">WhatsApp:</label>
-          <!-- agregado data-i18n para que el placeholder se traduzca -->
           <input type="tel" id="phoneNumber" data-i18n="label_phone" placeholder="Ej: 1123456789" />
         </div>
 
-        <div class="input-group">
+        <div class="input-group" style="margin-top:8px;">
           <label for="email" data-i18n="label_email">Correo Electrónico:</label>
-          <!-- agregado data-i18n -->
           <input type="email" id="email" data-i18n="label_email" placeholder="cliente@correo.com" />
         </div>
 
-        <div class="input-group">
+        <div class="input-group" style="margin-top:8px;">
           <label for="extraDetails" data-i18n="label_extra">Detalles Extra:</label>
-          <!-- agregado data-i18n -->
           <textarea id="extraDetails" data-i18n="label_extra" placeholder="Opcional..."></textarea>
         </div>
 
-        <div class="options">
-          <button id="searchClient" data-i18n="button_search">Buscar Cliente</button>
-        </div>
+        <!-- (Se eliminó el botón Buscar Cliente por pedido) -->
 
-        <div class="send-options">
-          <button id="sendWhatsappBtn" class="send-btn">
+        <div class="send-options" style="margin-top:12px;">
+          <button id="sendWhatsappBtn" type="button" class="send-btn">
             <img src="/images/whatsapp.png" alt="WhatsApp" class="icon" />
             Enviar
           </button>
 
-          <button id="sendEmailBtn" class="send-btn">
+          <button id="sendEmailBtn" type="button" class="send-btn">
             <img src="/images/mail.png" alt="Email" class="icon" />
             Enviar
           </button>
@@ -125,31 +127,15 @@
       </section>
 
       <!-- Botón Historial -->
-      <section class="historial-button">
+      <section class="historial-button" style="margin-top:18px;">
         <a href="/tickets.html">
-          <button class="btn-historial" id="viewHistoryBtn" data-i18n="button_history">
+          <button type="button" class="btn-historial" id="viewHistoryBtn" data-i18n="button_history">
             Ver Historial
           </button>
         </a>
       </section>
 
-      <!-- Planes -->
-      <section class="planes-container">
-        <div class="plan-card">
-          <h2 data-i18n="plan_personal_title">Plan Personal</h2>
-          <p data-i18n="plan_personal_desc">Para uso individual</p>
-          <p class="price" data-i18n="plan_personal_price">Gratis el primer mes</p>
-          <!-- agregado id para poder manejar el click desde JS -->
-          <button id="subscribeBtn" data-i18n="button_subscribe">Suscribirme</button>
-        </div>
-        <div class="plan-card">
-          <h2 data-i18n="plan_business_title">Plan Empresarial</h2>
-          <p data-i18n="plan_business_desc">Ideal para negocios</p>
-          <p class="price" data-i18n="plan_business_price">$2 USD / equipo + soporte</p>
-          <!-- agregado id para poder manejar el click desde JS -->
-          <button id="contactBtn" data-i18n="button_contact">Contactar</button>
-        </div>
-      </section>
+      <!-- (Se eliminó la sección de PLANES para dejar espacio a banners / ads) -->
     </main>
 
     <footer>
@@ -161,7 +147,7 @@
   <script src="/scripts/scripts.js"></script>
   <script src="/js/main.js"></script>
 
-  <!-- Script Vista Previa Plantillas -->
+  <!-- Script Vista Previa Plantillas y mejoras locales -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const previewBtn = document.getElementById("previewTemplateBtn");
@@ -169,15 +155,54 @@
       const previewBox = document.getElementById("templatePreview");
       const iframe = document.getElementById("templateIframe");
 
+      // Previene envío por defecto y usa /preview/{value}
       if (previewBtn) {
-        previewBtn.addEventListener("click", () => {
+        previewBtn.addEventListener("click", (e) => {
+          e.preventDefault();
           const value = select.value;
           if (!value) {
             alert("⚠️ Seleccioná una plantilla");
             return;
           }
-          iframe.src = `/preview/${value}`;
+          // intento usar la ruta server-side /preview/{value}
+          iframe.src = `/preview/${encodeURIComponent(value)}`;
           previewBox.classList.remove("hidden");
+        });
+      }
+
+      // Si el usuario sube una plantilla local (html/pdf), mostrarla en la vista previa
+      const customTemplateInput = document.getElementById("customTemplate");
+      const templatePreviewBox = previewBox;
+      if (customTemplateInput) {
+        customTemplateInput.addEventListener("change", (e) => {
+          const f = e.target.files && e.target.files[0];
+          if (!f) return;
+          const url = URL.createObjectURL(f);
+          iframe.src = url;
+          templatePreviewBox.classList.remove("hidden");
+        });
+      }
+
+      // Fallback: mostrar preview local inmediatamente cuando se selecciona archivo (si scripts.js no devuelve URL)
+      const fileInput = document.getElementById("archivo");
+      const uploadedPreview = document.getElementById("uploadedPreview");
+      const uploadedIframe = document.getElementById("uploadedIframe");
+      if (fileInput) {
+        fileInput.addEventListener("change", (e) => {
+          const f = e.target.files && e.target.files[0];
+          if (!f) return;
+          // si es imagen o pdf, se puede mostrar localmente
+          const mime = f.type || "";
+          if (mime.startsWith("image/") || mime === "application/pdf" || !mime) {
+            try {
+              const localUrl = URL.createObjectURL(f);
+              uploadedIframe.src = localUrl;
+              uploadedPreview.classList.remove("hidden");
+            } catch (err) {
+              // no mostrar preview local si algo falla
+              console.warn("No se pudo generar preview local:", err);
+            }
+          }
         });
       }
     });

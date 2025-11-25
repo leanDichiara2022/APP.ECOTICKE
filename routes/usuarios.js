@@ -1,170 +1,72 @@
-// routes/usuarios.js
 const express = require("express");
+const router = express.Router();
 const Usuario = require("../models/usuarios");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const logger = require("../utils/logger");
 
-const router = express.Router();
+// GET listado de usuarios (solo para pruebas)
+router.get("/", async (req, res) => {
+  try {
+    const users = await Usuario.find();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: "Error obteniendo usuarios" });
+  }
+});
 
-// ------------------ REGISTRO DE USUARIO ------------------
+// Registro
 router.post("/register", async (req, res) => {
   try {
-    const { nombre, email, password, deviceId } = req.body;
+    const { nombre, email, password } = req.body;
 
     if (!nombre || !email || !password) {
-      logger.warn("Intento de registro incompleto", { email });
-      return res.status(400).json({ message: "Todos los campos son obligatorios." });
+      return res.status(400).json({ error: "Faltan datos obligatorios" });
     }
 
-    const emailLower = email.toLowerCase();
-
-    const existingUser = await Usuario.findOne({ email: emailLower });
-    if (existingUser) {
-      logger.warn("Registro fallido: correo ya registrado", { email: emailLower });
-      return res.status(400).json({ message: "El correo ya está registrado." });
+    const existe = await Usuario.findOne({ email });
+    if (existe) {
+      return res.status(400).json({ error: "El email ya está registrado" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 10);
 
-    const newUser = new Usuario({
+    const nuevo = new Usuario({
       nombre,
-      email: emailLower,
-      password: hashedPassword,
-      plan: { tipo: "personal", estado: "prueba" },
-      allowedDevices: 9999,
-      devices: []
+      email,
+      password: hashed,
     });
 
-    if (deviceId) {
-      newUser.devices.push({ deviceId, lastUsed: new Date() });
-    }
+    await nuevo.save();
 
-    await newUser.save();
-
-    logger.info("Usuario registrado con éxito", { userId: newUser._id, email: emailLower });
-    res.status(201).json({ message: "Usuario registrado con éxito." });
+    res.json({ message: "Usuario registrado con éxito" });
   } catch (error) {
-    logger.error("Error en el registro de usuario", { error: error.message });
-    res.status(500).json({ message: "Error en el servidor." });
+    console.error("Error registrando usuario:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
-// ------------------ INICIO DE SESIÓN ------------------
+// Login
 router.post("/login", async (req, res) => {
   try {
-    const { email, password, deviceId } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password) {
-      logger.warn("Intento de login con campos incompletos", { email, deviceId });
-      return res.status(400).json({ message: "Email y contraseña son obligatorios." });
+      return res.status(400).json({ error: "Faltan datos" });
     }
 
-    const emailLower = email.toLowerCase();
-    const user = await Usuario.findOne({ email: emailLower });
-
-    if (!user) {
-      logger.warn("Login fallido: usuario no encontrado", { email: emailLower });
-      return res.status(404).json({ message: "Usuario no encontrado." });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      logger.warn("Login fallido: contraseña incorrecta", { userId: user._id });
-      return res.status(401).json({ message: "Contraseña incorrecta." });
-    }
-
-    // No bloquear por límite de dispositivos: agregamos device si no existe
-    try {
-      const existingDevice = user.devices.find(d => d.deviceId === deviceId);
-      if (!existingDevice && deviceId) {
-        user.devices.push({ deviceId, lastUsed: new Date() });
-      } else if (existingDevice) {
-        existingDevice.lastUsed = new Date();
-      }
-      await user.save();
-    } catch (err) {
-      logger.warn("No se pudo actualizar devices, continua login", { err: err.message });
-    }
-
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "30d" }
-    );
-
-    const { password: _, ...userWithoutPassword } = user.toObject();
-
-    logger.info("Inicio de sesión exitoso", { userId: user._id, deviceId });
-    res.status(200).json({
-      message: "Inicio de sesión exitoso.",
-      token,
-      user: userWithoutPassword
-    });
-  } catch (error) {
-    logger.error("Error en el inicio de sesión", { error: error.message });
-    res.status(500).json({ message: "Error en el servidor." });
-  }
-});
-
-// ------------------ CIERRE DE SESIÓN ------------------
-router.post("/logout", async (req, res) => {
-  try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
-    const deviceId = req.header("x-device-id");
-
-    if (!token || !deviceId) {
-      return res.status(400).json({ message: "Token y deviceId son obligatorios." });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await Usuario.findById(decoded.id);
-
-    if (!user) {
-      return res.status(401).json({ message: "Usuario no encontrado." });
-    }
-
-    // eliminar solo el deviceId
-    user.devices = user.devices.filter(d => d.deviceId !== deviceId);
-    await user.save();
-
-    logger.info("Cierre de sesión exitoso", {
-      userId: user._id,
-      email: user.email,
-      deviceId
-    });
-
-    res.json({ message: "Cierre de sesión exitoso." });
-  } catch (error) {
-    logger.error("Error en logout", { error: error.message });
-    res.status(500).json({ message: "Error en el servidor." });
-  }
-});
-
-// ------------------ BÚSQUEDA POR EMAIL O CELULAR ------------------
-router.get("/search", async (req, res) => {
-  const q = req.query.q;
-
-  if (!q) {
-    logger.warn("Intento de búsqueda sin query");
-    return res.status(400).json({ message: "Debe proporcionar un email o número de celular para buscar." });
-  }
-
-  try {
-    const usuario = await Usuario.findOne({
-      $or: [{ email: q.toLowerCase() }, { "negocio.telefono": q }]
-    }).select("-password");
-
+    const usuario = await Usuario.findOne({ email });
     if (!usuario) {
-      logger.info("Búsqueda de usuario: no encontrado", { query: q });
-      return res.status(404).json({ message: "Cliente no encontrado." });
+      return res.status(400).json({ error: "Usuario no encontrado" });
     }
 
-    logger.info("Búsqueda de usuario exitosa", { userId: usuario._id, query: q });
-    res.json(usuario);
-  } catch (err) {
-    logger.error("Error al buscar usuario", { error: err.message });
-    res.status(500).json({ message: "Error en el servidor." });
+    const coin = await bcrypt.compare(password, usuario.password);
+    if (!coin) {
+      return res.status(400).json({ error: "Contraseña incorrecta" });
+    }
+
+    res.json({ message: "Login exitoso" });
+  } catch (error) {
+    console.error("Error en login:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
