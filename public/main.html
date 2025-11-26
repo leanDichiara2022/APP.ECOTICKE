@@ -16,6 +16,7 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       overflow: hidden;
+      background: #fff;
     }
     .preview-box iframe {
       width: 100%;
@@ -23,6 +24,19 @@
       border: none;
     }
     .preview-actions { margin-top: 8px; }
+    /* espacio para banner/publicidad */
+    #adBanner {
+      margin-top: 18px;
+      width: 100%;
+      max-width: 980px;
+      height: 90px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f7f7f7;
+      border: 1px dashed #ddd;
+    }
   </style>
 </head>
 <body>
@@ -51,7 +65,7 @@
           <input type="file" id="archivo" name="archivo" accept="*/*" />
         </form>
         <p style="font-size: 0.9em; margin-top: 5px; color: #666;">
-          Podés subir cualquier archivo. Si no es PDF.
+          Podés subir cualquier archivo. Si no es PDF, lo convertimos.
         </p>
         <p id="pdfMessage" style="margin-top: 10px;"></p>
 
@@ -135,7 +149,12 @@
         </a>
       </section>
 
-      <!-- (Se eliminó la sección de PLANES para dejar espacio a banners / ads) -->
+      <!-- Espacio para banners / publicidad (Google AdSense o banners directos) -->
+      <div id="adBanner">
+        <!-- Aquí después insertamos AdSense o el banner directo -->
+        <span style="color:#888;">Espacio para banner publicitario</span>
+      </div>
+
     </main>
 
     <footer>
@@ -164,7 +183,6 @@
             alert("⚠️ Seleccioná una plantilla");
             return;
           }
-          // intento usar la ruta server-side /preview/{value}
           iframe.src = `/preview/${encodeURIComponent(value)}`;
           previewBox.classList.remove("hidden");
         });
@@ -172,14 +190,13 @@
 
       // Si el usuario sube una plantilla local (html/pdf), mostrarla en la vista previa
       const customTemplateInput = document.getElementById("customTemplate");
-      const templatePreviewBox = previewBox;
       if (customTemplateInput) {
         customTemplateInput.addEventListener("change", (e) => {
           const f = e.target.files && e.target.files[0];
           if (!f) return;
           const url = URL.createObjectURL(f);
           iframe.src = url;
-          templatePreviewBox.classList.remove("hidden");
+          previewBox.classList.remove("hidden");
         });
       }
 
@@ -191,7 +208,6 @@
         fileInput.addEventListener("change", (e) => {
           const f = e.target.files && e.target.files[0];
           if (!f) return;
-          // si es imagen o pdf, se puede mostrar localmente
           const mime = f.type || "";
           if (mime.startsWith("image/") || mime === "application/pdf" || !mime) {
             try {
@@ -199,7 +215,6 @@
               uploadedIframe.src = localUrl;
               uploadedPreview.classList.remove("hidden");
             } catch (err) {
-              // no mostrar preview local si algo falla
               console.warn("No se pudo generar preview local:", err);
             }
           }
@@ -214,7 +229,7 @@
       try {
         const { ipcRenderer } = require("electron");
         ipcRenderer.on("new-print-file", (event, filePath) => {
-          showToast("📄 Nuevo archivo detectado en impresora virtual", "success");
+          if (typeof showToast === "function") showToast("📄 Nuevo archivo detectado en impresora virtual", "success");
         });
       } catch (err) {
         console.warn("Electron no disponible en este entorno.");
