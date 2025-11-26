@@ -18,7 +18,6 @@ document.addEventListener("DOMContentLoaded", () => {
       label_phone: "WhatsApp:",
       label_email: "Correo Electrónico:",
       label_extra: "Detalles Extra:",
-      button_search: "Buscar Cliente",
       button_history: "Ver Historial",
       plan_personal_title: "Plan Personal",
       plan_personal_desc: "Para uso individual",
@@ -44,7 +43,6 @@ document.addEventListener("DOMContentLoaded", () => {
       label_phone: "WhatsApp:",
       label_email: "Email:",
       label_extra: "Extra Details:",
-      button_search: "Search Client",
       button_history: "View History",
       plan_personal_title: "Personal Plan",
       plan_personal_desc: "For individual use",
@@ -65,12 +63,11 @@ document.addEventListener("DOMContentLoaded", () => {
       upload_button: "Enviar & Converter",
       template_heading: "Escolher Modelo",
       template_label: "Selecione um modelo pré-definido:",
-      template_custom_label: "Ou envie seu próprio modelo:",
+      template_custom_label: "Ou subir seu próprio modelo:",
       label_country: "Código do País:",
       label_phone: "WhatsApp:",
       label_email: "Email:",
       label_extra: "Detalhes Extras:",
-      button_search: "Buscar Cliente",
       button_history: "Ver Histórico",
       plan_personal_title: "Plano Pessoal",
       plan_personal_desc: "Para uso individual",
@@ -95,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
         el.placeholder = text;
       }
       // Si el elemento es un botón → textContent
-      else if (el.tagName === "BUTTON" || el.tagName === "OPTION") {
+      else if (el.tagName === "BUTTON" || el.tagName === "OPTION" || el.tagName === "A") {
         el.textContent = text;
       }
       else {
@@ -128,51 +125,12 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // -------------------------------
-  // Buscar cliente
-  // -------------------------------
-  const searchClientBtn = document.getElementById("searchClient");
-  const emailInput = document.getElementById("email");
-  const phoneInput = document.getElementById("phoneNumber");
-
-  searchClientBtn?.addEventListener("click", async (e) => {
-    e.preventDefault();
-    const email = emailInput?.value.trim();
-    const phone = phoneInput?.value.trim();
-    if (!email && !phone) { alert("⚠️ Ingresá email o WhatsApp del cliente"); return; }
-
-    try {
-      const query = new URLSearchParams();
-      if (email) query.append("email", email);
-      if (phone) query.append("phone", phone);
-
-      const response = await fetch(`/api/clients/search?${query.toString()}`);
-      const data = await response.json();
-      if (response.ok && data.client) {
-        alert(`✅ Cliente encontrado: ${data.client.name || "Sin nombre"}`);
-        if (data.client.email) emailInput.value = data.client.email;
-        if (data.client.celular) phoneInput.value = data.client.celular;
-      } else {
-        alert("❌ Cliente no encontrado");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("❌ Error al buscar cliente");
-    }
-  });
-
-  // -------------------------------
-  // Botón Suscribirme
+  // Botón Suscribirme / Contactar
+  // (las cajas de planes fueron removidas del main, pero si existen botones en otra parte)
   // -------------------------------
   const subscribeBtn = document.querySelector("[data-i18n='button_subscribe']");
-  subscribeBtn?.addEventListener("click", () => {
-    window.location.href = "/planes.html";
-  });
+  if (subscribeBtn) subscribeBtn.addEventListener("click", () => { window.location.href = "/planes.html"; });
 
-  // -------------------------------
-  // Botón Contactar
-  // -------------------------------
   const contactBtn = document.querySelector("[data-i18n='button_contact']");
-  contactBtn?.addEventListener("click", () => {
-    window.location.href = "/planes.html";
-  });
+  if (contactBtn) contactBtn.addEventListener("click", () => { window.location.href = "/planes.html"; });
 });

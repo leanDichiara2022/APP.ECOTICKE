@@ -1,19 +1,20 @@
 document.addEventListener("DOMContentLoaded", () => {
   const sendWhatsappBtn = document.getElementById("sendWhatsappBtn");
   const sendEmailBtn = document.getElementById("sendEmailBtn");
-  const searchClientBtn = document.getElementById("searchClient");
   const phoneInput = document.getElementById("phoneNumber");
   const emailInput = document.getElementById("email");
   const detailsInput = document.getElementById("extraDetails");
   const fileInput = document.getElementById("archivo");
   const pdfMessage = document.getElementById("pdfMessage");
+
+  // ========= CONTENEDOR DE PREVIEW =========
   const previewContainer = document.createElement("div");
   previewContainer.id = "pdfPreviewContainer";
   previewContainer.className = "preview-box hidden";
   document.querySelector(".upload-section").appendChild(previewContainer);
 
   // =====================================================
-  // 📑 Subida y vista previa automática
+  // 📑 SUBIDA Y VISTA PREVIA AUTOMÁTICA
   // =====================================================
   if (fileInput) {
     fileInput.addEventListener("change", async (e) => {
@@ -27,7 +28,6 @@ document.addEventListener("DOMContentLoaded", () => {
       formData.append("archivo", file);
 
       try {
-        // ❗ CAMBIO IMPORTANTE: TOKEN CORRECTO
         const token = localStorage.getItem("authToken");
 
         const res = await fetch("/api/pdf/upload", {
@@ -36,19 +36,12 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: token ? { "x-auth-token": token } : undefined,
         });
 
-        if (res.status === 401) {
-          pdfMessage.textContent = "⚠️ Sesión expirada. Volvé a iniciar sesión.";
-          pdfMessage.style.color = "red";
-          return;
-        }
-
-        const text = await res.text();
+        const raw = await res.text();
         let data;
         try {
-          data = JSON.parse(text);
-        } catch (err) {
-          console.error("Respuesta inválida:", text);
-          pdfMessage.textContent = "❌ Error al subir archivo (respuesta inválida)";
+          data = JSON.parse(raw);
+        } catch (e) {
+          pdfMessage.textContent = "❌ Respuesta inválida del servidor";
           pdfMessage.style.color = "red";
           return;
         }
@@ -58,19 +51,13 @@ document.addEventListener("DOMContentLoaded", () => {
           pdfMessage.textContent = "✅ Archivo subido correctamente";
           pdfMessage.style.color = "green";
 
-          if (data.url) {
-            showPDFPreview(data.url);
-          } else {
-            previewContainer.classList.add("hidden");
-          }
+          if (data.url) showPDFPreview(data.url);
         } else {
-          pdfMessage.textContent =
-            "❌ Error al subir archivo: " + (data.error || "Error desconocido");
+          pdfMessage.textContent = "❌ Error: " + (data.error || "Error desconocido");
           pdfMessage.style.color = "red";
         }
       } catch (err) {
-        console.error(err);
-        pdfMessage.textContent = "❌ Error al subir archivo";
+        pdfMessage.textContent = "❌ Error al procesar archivo";
         pdfMessage.style.color = "red";
       }
     });
@@ -84,96 +71,75 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =====================================================
-  // 📱 Enviar por WhatsApp
+  // 📱 ENVIAR POR WHATSAPP
   // =====================================================
-  sendWhatsappBtn &&
-    sendWhatsappBtn.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const countryCode = document.getElementById("countryCode").value;
-      const phone = phoneInput.value.trim();
-      const details = detailsInput.value;
-      const fileName = localStorage.getItem("lastUploadedFile");
+  sendWhatsappBtn?.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const countryCode = document.getElementById("countryCode").value;
+    const phone = phoneInput.value.trim();
+    const fileName = localStorage.getItem("lastUploadedFile");
 
-      if (!phone || !fileName) {
-        showToast("⚠️ Debes ingresar un número y subir un archivo primero.", "error");
-        return;
+    if (!phone || !fileName) {
+      showToast("⚠️ Ingresá teléfono y subí un archivo", "error");
+      return;
+    }
+
+    const phoneNumber = countryCode.replace("+", "") + phone;
+
+    try {
+      const res = await fetch("/api/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phoneNumber,
+          fileName,
+          details: detailsInput?.value || "",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast("📲 Enlace de WhatsApp generado", "success");
+        if (data.whatsappLink) window.open(data.whatsappLink, "_blank");
+      } else {
+        showToast("❌ No se pudo generar el link", "error");
       }
-
-      const phoneNumber = countryCode.replace("+", "") + phone;
-
-      try {
-        const res = await fetch("/api/whatsapp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phoneNumber, fileName, details }),
-        });
-
-        const data = await res.json();
-        if (res.ok) {
-          showToast("📲 Enlace de WhatsApp generado con éxito", "success");
-          localStorage.setItem(
-            "lastSentContact",
-            JSON.stringify({
-              phone,
-              email: emailInput.value,
-              details,
-              fileName,
-            })
-          );
-          if (data.whatsappLink) window.open(data.whatsappLink, "_blank");
-        } else {
-          showToast("❌ Error al generar el link de WhatsApp", "error");
-        }
-      } catch (error) {
-        console.error(error);
-        showToast("❌ No se pudo enviar por WhatsApp", "error");
-      }
-    });
+    } catch (err) {
+      showToast("❌ Error al enviar mensaje", "error");
+    }
+  });
 
   // =====================================================
-  // 📧 Enviar por Email
+  // 📧 ENVIAR POR EMAIL
   // =====================================================
-  sendEmailBtn &&
-    sendEmailBtn.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const email = emailInput.value.trim();
-      const fileName = localStorage.getItem("lastUploadedFile");
+  sendEmailBtn?.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const email = emailInput.value.trim();
+    const fileName = localStorage.getItem("lastUploadedFile");
 
-      if (!email || !fileName) {
-        showToast("⚠️ Debes ingresar un correo y subir un archivo primero.", "error");
-        return;
-      }
+    if (!email || !fileName) {
+      showToast("⚠️ Ingresá correo y subí un archivo", "error");
+      return;
+    }
 
-      try {
-        const res = await fetch("/api/correo", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, fileName }),
-        });
+    try {
+      const res = await fetch("/api/correo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, fileName }),
+      });
 
-        const data = await res.json();
-        if (res.ok) {
-          showToast("📧 Correo enviado con éxito!", "success");
-          localStorage.setItem(
-            "lastSentContact",
-            JSON.stringify({
-              phone: phoneInput.value,
-              email,
-              details: detailsInput.value,
-              fileName,
-            })
-          );
-        } else {
-          showToast("❌ Error al enviar correo", "error");
-        }
-      } catch (error) {
-        console.error(error);
-        showToast("❌ No se pudo enviar por correo", "error");
-      }
-    });
+      const data = await res.json();
+      if (res.ok) showToast("📧 Correo enviado correctamente", "success");
+      else showToast("❌ No se pudo enviar correo", "error");
+    } catch (err) {
+      showToast("❌ Error del servidor", "error");
+    }
+  });
 
   // =====================================================
-  // 🔎 Buscar Cliente
+  // 🔎 BUSCADOR DE CLIENTES (AUTOCOMPLETE)
   // =====================================================
   const searchResultsContainer = document.createElement("div");
   searchResultsContainer.id = "searchResultsContainer";
@@ -195,8 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch(`/api/contacts/search?query=${encodeURIComponent(query)}`);
       const data = await res.json();
       return data.contacts || [];
-    } catch (error) {
-      console.error("Error buscando cliente:", error);
+    } catch {
       return [];
     }
   }
@@ -209,27 +174,22 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showResults(contacts, input) {
-    if (!contacts.length) {
-      searchResultsContainer.style.display = "none";
-      return;
-    }
+    if (!contacts.length) return (searchResultsContainer.style.display = "none");
 
     searchResultsContainer.innerHTML = "";
-    contacts.forEach((contact) => {
+    contacts.forEach((c) => {
       const item = document.createElement("div");
-      Object.assign(item.style, {
-        padding: "8px",
-        cursor: "pointer",
-        borderBottom: "1px solid #eee",
-      });
-      item.innerText = `${contact.name || "Sin Nombre"} - ${contact.phone || "-"} - ${contact.email || "-"}`;
-      item.addEventListener("click", () => {
-        phoneInput.value = contact.phone || "";
-        emailInput.value = contact.email || "";
-        detailsInput.value = contact.extraDetails || "";
+      item.style.padding = "8px";
+      item.style.cursor = "pointer";
+      item.style.borderBottom = "1px solid #eee";
+      item.innerText = `${c.name || "Sin nombre"} - ${c.phone || ""} - ${c.email || ""}`;
+      item.onclick = () => {
+        phoneInput.value = c.phone || "";
+        emailInput.value = c.email || "";
+        detailsInput.value = c.extraDetails || "";
         searchResultsContainer.style.display = "none";
-        showToast(`✅ Contacto seleccionado`, "success");
-      });
+        showToast("✅ Cliente seleccionado", "success");
+      };
       searchResultsContainer.appendChild(item);
     });
 
@@ -238,15 +198,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   [phoneInput, emailInput].forEach((input) => {
-    if (!input) return;
-    input.addEventListener("input", async () => {
+    input?.addEventListener("input", async () => {
       const query = input.value.trim();
-      if (!query) {
-        searchResultsContainer.style.display = "none";
-        return;
-      }
-      const contacts = await searchClients(query);
-      showResults(contacts, input);
+      if (!query) return (searchResultsContainer.style.display = "none");
+      const clients = await searchClients(query);
+      showResults(clients, input);
     });
   });
 
@@ -255,17 +211,4 @@ document.addEventListener("DOMContentLoaded", () => {
       searchResultsContainer.style.display = "none";
     }
   });
-
-  // =====================================================
-  // 🔒 Logout
-  // =====================================================
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      localStorage.clear();
-      showToast("👋 Sesión cerrada correctamente", "success");
-      setTimeout(() => (window.location.href = "/login.html"), 1000);
-    });
-  }
 });
