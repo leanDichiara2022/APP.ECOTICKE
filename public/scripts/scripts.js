@@ -1,4 +1,72 @@
+// public/scripts/scripts.js
+// Lógica del frontend (subida, vista previa, envío, búsqueda, sesión)
+// Diseñado para usar SESSION cookies (express-session) -> fetch(..., { credentials: 'include' })
+
+// -------------------- Helpers --------------------
+function showToast(msg, type = "info", timeout = 3000) {
+  const container = document.getElementById("toastContainer");
+  if (!container) return;
+  const t = document.createElement("div");
+  t.className = `toast toast-${type}`;
+  t.innerText = msg;
+  container.appendChild(t);
+  setTimeout(() => {
+    t.classList.add("toast-hide");
+    setTimeout(() => t.remove(), 400);
+  }, timeout);
+}
+
+// -------------------- Session check & logout --------------------
+async function ensureSessionOrRedirect() {
+  try {
+    const res = await fetch("/api/usuarios/session", {
+      method: "GET",
+      credentials: "include",
+      headers: { "Accept": "application/json" },
+    });
+    if (!res.ok) {
+      // Si por alguna razón responde error => redirigir a login
+      window.location.href = "/login";
+      return;
+    }
+    const data = await res.json();
+    if (!data.loggedIn) {
+      window.location.href = "/login";
+    } else {
+      // Opcional: mostrar nombre en UI si existe
+      if (data.user && data.user.nombre) {
+        const title = document.querySelector("#appTitle h1");
+        if (title) title.innerText = `Panel — ${data.user.nombre}`;
+      }
+    }
+  } catch (err) {
+    console.error("Error verificando sesión:", err);
+    window.location.href = "/login";
+  }
+}
+
+async function logout() {
+  try {
+    const res = await fetch("/api/usuarios/logout", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Accept": "application/json", "Content-Type": "application/json" },
+    });
+    // No esperar datos, simplemente redirigir al login
+    window.location.href = "/login";
+  } catch (err) {
+    console.error("Error al cerrar sesión:", err);
+    window.location.href = "/login";
+  }
+}
+
+// -------------------- Main DOM logic --------------------
 document.addEventListener("DOMContentLoaded", () => {
+  // Si estamos en páginas protegidas, verificamos sesión
+  // (Esta función redirige si no hay sesión)
+  // Ejecutar primero antes de bindear eventos críticos
+  ensureSessionOrRedirect();
+
   const sendWhatsappBtn = document.getElementById("sendWhatsappBtn");
   const sendEmailBtn = document.getElementById("sendEmailBtn");
   const phoneInput = document.getElementById("phoneNumber");
@@ -8,13 +76,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const pdfMessage = document.getElementById("pdfMessage");
 
   // ========= CONTENEDOR DE PREVIEW =========
-  const previewContainer = document.createElement("div");
-  previewContainer.id = "pdfPreviewContainer";
-  previewContainer.className = "preview-box hidden";
-  document.querySelector(".upload-section").appendChild(previewContainer);
+  let previewContainer = document.getElementById("pdfPreviewContainer");
+  if (!previewContainer) {
+    previewContainer = document.createElement("div");
+    previewContainer.id = "pdfPreviewContainer";
+    previewContainer.className = "preview-box hidden";
+    const uploadSection = document.querySelector(".upload-section");
+    if (uploadSection) uploadSection.appendChild(previewContainer);
+    else document.body.appendChild(previewContainer);
+  }
 
   // =====================================================
-  // 📑 SUBIDA Y VISTA PREVIA AUTOMÁTICA
+  // 📑 SUBIDA Y VISTA PREVIA AUTOMÁTICA (usa SESSION cookie)
   // =====================================================
   if (fileInput) {
     fileInput.addEventListener("change", async (e) => {
@@ -28,12 +101,10 @@ document.addEventListener("DOMContentLoaded", () => {
       formData.append("archivo", file);
 
       try {
-        const token = localStorage.getItem("authToken");
-
         const res = await fetch("/api/pdf/upload", {
           method: "POST",
           body: formData,
-          headers: token ? { "x-auth-token": token } : undefined,
+          credentials: "include", // importante para enviar cookie de sesión
         });
 
         const raw = await res.text();
@@ -47,6 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (res.ok && data.fileName) {
+          // guardado local para referencia en esta sesión (no para auth)
           localStorage.setItem("lastUploadedFile", data.fileName);
           pdfMessage.textContent = "✅ Archivo subido correctamente";
           pdfMessage.style.color = "green";
@@ -57,6 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
           pdfMessage.style.color = "red";
         }
       } catch (err) {
+        console.error("Error al subir archivo:", err);
         pdfMessage.textContent = "❌ Error al procesar archivo";
         pdfMessage.style.color = "red";
       }
@@ -71,12 +144,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =====================================================
-  // 📱 ENVIAR POR WHATSAPP
+  // 📱 ENVIAR POR WHATSAPP (usa SESSION cookie)
   // =====================================================
   sendWhatsappBtn?.addEventListener("click", async (e) => {
     e.preventDefault();
-    const countryCode = document.getElementById("countryCode").value;
-    const phone = phoneInput.value.trim();
+    const countryCode = document.getElementById("countryCode")?.value || "";
+    const phone = phoneInput?.value.trim();
     const fileName = localStorage.getItem("lastUploadedFile");
 
     if (!phone || !fileName) {
@@ -89,6 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch("/api/whatsapp", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           phoneNumber,
@@ -106,12 +180,13 @@ document.addEventListener("DOMContentLoaded", () => {
         showToast("❌ No se pudo generar el link", "error");
       }
     } catch (err) {
+      console.error("Error enviando WhatsApp:", err);
       showToast("❌ Error al enviar mensaje", "error");
     }
   });
 
   // =====================================================
-  // 📧 ENVIAR POR EMAIL
+  // 📧 ENVIAR POR EMAIL (usa SESSION cookie)
   // =====================================================
   sendEmailBtn?.addEventListener("click", async (e) => {
     e.preventDefault();
@@ -126,6 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch("/api/correo", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, fileName }),
       });
@@ -134,12 +210,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (res.ok) showToast("📧 Correo enviado correctamente", "success");
       else showToast("❌ No se pudo enviar correo", "error");
     } catch (err) {
+      console.error("Error enviando correo:", err);
       showToast("❌ Error del servidor", "error");
     }
   });
 
   // =====================================================
-  // 🔎 BUSCADOR DE CLIENTES (AUTOCOMPLETE)
+  // 🔎 BUSCADOR DE CLIENTES (AUTOCOMPLETE) - usa SESSION cookie
   // =====================================================
   const searchResultsContainer = document.createElement("div");
   searchResultsContainer.id = "searchResultsContainer";
@@ -158,10 +235,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function searchClients(query) {
     try {
-      const res = await fetch(`/api/contacts/search?query=${encodeURIComponent(query)}`);
+      const res = await fetch(`/api/contacts/search?query=${encodeURIComponent(query)}`, {
+        method: "GET",
+        credentials: "include",
+        headers: { "Accept": "application/json" },
+      });
+      if (!res.ok) return [];
       const data = await res.json();
       return data.contacts || [];
-    } catch {
+    } catch (err) {
+      console.error("Error buscando contactos:", err);
       return [];
     }
   }
@@ -211,4 +294,7 @@ document.addEventListener("DOMContentLoaded", () => {
       searchResultsContainer.style.display = "none";
     }
   });
+
+  // -------------------- Extra: permitir Logout desde botón en header --------------------
+  window.logout = logout;
 });

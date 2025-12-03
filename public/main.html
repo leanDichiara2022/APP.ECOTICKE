@@ -6,7 +6,6 @@
   <title data-i18n="title">Panel de Tickets</title>
   <link rel="stylesheet" href="/css/main.css" />
   <style>
-    /* pequeño helper para la preview */
     .hidden { display: none; }
     .preview-box {
       margin-top: 12px;
@@ -24,7 +23,7 @@
       border: none;
     }
     .preview-actions { margin-top: 8px; }
-    /* espacio para banner/publicidad */
+
     #adBanner {
       margin-top: 18px;
       width: 100%;
@@ -38,7 +37,11 @@
       border: 1px dashed #ddd;
     }
   </style>
+
+  <!-- 🔥 AGREGADO IMPORTANTE PARA EVITAR CACHE -->
+  <meta http-equiv="Cache-Control" content="no-store" />
 </head>
+
 <body>
   <div class="container-historial">
     <header>
@@ -46,6 +49,7 @@
         <img src="/images/TickECO-Photoroom.png" alt="App Logo" class="app-logo" />
         <h1 data-i18n="main_heading">Panel de Envío de Tickets</h1>
       </div>
+
       <div class="language-selector">
         <label for="language" data-i18n="language_label">Idioma:</label>
         <select id="language">
@@ -64,19 +68,20 @@
           <label for="archivo" class="file-label">Seleccionar archivo:</label>
           <input type="file" id="archivo" name="archivo" accept="*/*" />
         </form>
+
         <p style="font-size: 0.9em; margin-top: 5px; color: #666;">
           Podés subir cualquier archivo. Si no es PDF, lo convertimos.
         </p>
+
         <p id="pdfMessage" style="margin-top: 10px;"></p>
 
-        <!-- Preview contenedor (para el archivo subido) -->
         <div id="uploadedPreview" class="preview-box hidden" style="margin-top:8px;">
           <iframe id="uploadedIframe" sandbox></iframe>
         </div>
 
-        <!-- Selector de Plantillas -->
         <section class="template-section" style="margin-top:18px;">
           <h2 data-i18n="template_heading">Elegir Plantilla</h2>
+
           <div class="template-options">
             <label for="templateSelect" data-i18n="template_label">Selecciona una plantilla predefinida:</label>
             <select id="templateSelect">
@@ -86,20 +91,22 @@
               <option value="pdf_template_2">PDF Template 2</option>
             </select>
           </div>
+
           <div class="upload-template" style="margin-top:8px;">
             <label for="customTemplate" class="file-label" data-i18n="template_custom_label">O subir tu propia plantilla:</label>
             <input type="file" id="customTemplate" name="customTemplate" accept=".html,.pdf" />
           </div>
+
           <div class="preview-actions">
             <button id="previewTemplateBtn" type="button" class="btn-preview">Vista previa</button>
           </div>
+
           <div id="templatePreview" class="preview-box hidden" style="margin-top:8px;">
             <iframe id="templateIframe" sandbox></iframe>
           </div>
         </section>
       </section>
 
-      <!-- Formulario de envío -->
       <section class="send-ticket-section" style="margin-top:18px;">
         <div class="input-group">
           <label for="countryCode" data-i18n="label_country">Código País:</label>
@@ -112,20 +119,18 @@
 
         <div class="input-group" style="margin-top:8px;">
           <label for="phoneNumber" data-i18n="label_phone">WhatsApp:</label>
-          <input type="tel" id="phoneNumber" data-i18n="label_phone" placeholder="Ej: 1123456789" />
+          <input type="tel" id="phoneNumber" placeholder="Ej: 1123456789" />
         </div>
 
         <div class="input-group" style="margin-top:8px;">
           <label for="email" data-i18n="label_email">Correo Electrónico:</label>
-          <input type="email" id="email" data-i18n="label_email" placeholder="cliente@correo.com" />
+          <input type="email" id="email" placeholder="cliente@correo.com" />
         </div>
 
         <div class="input-group" style="margin-top:8px;">
           <label for="extraDetails" data-i18n="label_extra">Detalles Extra:</label>
-          <textarea id="extraDetails" data-i18n="label_extra" placeholder="Opcional..."></textarea>
+          <textarea id="extraDetails" placeholder="Opcional..."></textarea>
         </div>
-
-        <!-- (Se eliminó el botón Buscar Cliente por pedido) -->
 
         <div class="send-options" style="margin-top:12px;">
           <button id="sendWhatsappBtn" type="button" class="send-btn">
@@ -140,18 +145,15 @@
         </div>
       </section>
 
-      <!-- Botón Historial -->
       <section class="historial-button" style="margin-top:18px;">
-        <a href="/tickets.html">
+        <a href="/tickets">
           <button type="button" class="btn-historial" id="viewHistoryBtn" data-i18n="button_history">
             Ver Historial
           </button>
         </a>
       </section>
 
-      <!-- Espacio para banners / publicidad (Google AdSense o banners directos) -->
       <div id="adBanner">
-        <!-- Aquí después insertamos AdSense o el banner directo -->
         <span style="color:#888;">Espacio para banner publicitario</span>
       </div>
 
@@ -163,10 +165,9 @@
   </div>
 
   <!-- Scripts -->
-  <script src="/scripts/scripts.js"></script>
-  <script src="/js/main.js"></script>
+  <script src="/scripts/scripts.js?v=2"></script>
+  <script src="/js/main.js?v=2"></script>
 
-  <!-- Script Vista Previa Plantillas y mejoras locales -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const previewBtn = document.getElementById("previewTemplateBtn");
@@ -174,25 +175,21 @@
       const previewBox = document.getElementById("templatePreview");
       const iframe = document.getElementById("templateIframe");
 
-      // Previene envío por defecto y usa /preview/{value}
       if (previewBtn) {
         previewBtn.addEventListener("click", (e) => {
           e.preventDefault();
           const value = select.value;
-          if (!value) {
-            alert("⚠️ Seleccioná una plantilla");
-            return;
-          }
+          if (!value) return alert("⚠️ Seleccioná una plantilla");
+
           iframe.src = `/preview/${encodeURIComponent(value)}`;
           previewBox.classList.remove("hidden");
         });
       }
 
-      // Si el usuario sube una plantilla local (html/pdf), mostrarla en la vista previa
       const customTemplateInput = document.getElementById("customTemplate");
       if (customTemplateInput) {
         customTemplateInput.addEventListener("change", (e) => {
-          const f = e.target.files && e.target.files[0];
+          const f = e.target.files?.[0];
           if (!f) return;
           const url = URL.createObjectURL(f);
           iframe.src = url;
@@ -200,45 +197,35 @@
         });
       }
 
-      // Fallback: mostrar preview local inmediatamente cuando se selecciona archivo (si scripts.js no devuelve URL)
       const fileInput = document.getElementById("archivo");
       const uploadedPreview = document.getElementById("uploadedPreview");
       const uploadedIframe = document.getElementById("uploadedIframe");
+
       if (fileInput) {
         fileInput.addEventListener("change", (e) => {
-          const f = e.target.files && e.target.files[0];
+          const f = e.target.files?.[0];
           if (!f) return;
-          const mime = f.type || "";
-          if (mime.startsWith("image/") || mime === "application/pdf" || !mime) {
-            try {
-              const localUrl = URL.createObjectURL(f);
-              uploadedIframe.src = localUrl;
-              uploadedPreview.classList.remove("hidden");
-            } catch (err) {
-              console.warn("No se pudo generar preview local:", err);
-            }
-          }
+
+          const url = URL.createObjectURL(f);
+          uploadedIframe.src = url;
+          uploadedPreview.classList.remove("hidden");
         });
       }
     });
   </script>
 
-  <!-- Listener Electron (solo si está disponible) -->
   <script>
     if (typeof require !== "undefined") {
       try {
         const { ipcRenderer } = require("electron");
         ipcRenderer.on("new-print-file", (event, filePath) => {
-          if (typeof showToast === "function") showToast("📄 Nuevo archivo detectado en impresora virtual", "success");
+          if (typeof showToast === "function") showToast("📄 Nuevo archivo detectado", "success");
         });
-      } catch (err) {
-        console.warn("Electron no disponible en este entorno.");
-      }
+      } catch {}
     }
   </script>
 
-  <!-- script que contiene la lógica de traducción + búsqueda cliente etc -->
-  <script src="/scripts/main-extra.js"></script>
+  <script src="/scripts/main-extra.js?v=2"></script>
 
   <div id="toastContainer" class="toast-container"></div>
 </body>

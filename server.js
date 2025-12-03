@@ -91,9 +91,17 @@ const html = (file) => path.join(publicPath, file);
 app.get("/", (req, res) => res.sendFile(html("index.html")));
 app.get("/login", (req, res) => res.sendFile(html("login.html")));
 app.get("/register", (req, res) => res.sendFile(html("register.html")));
-app.get("/main", (req, res) => res.sendFile(html("main.html")));
-app.get("/tickets", (req, res) => res.sendFile(html("tickets.html")));
-app.get("/contacts", (req, res) => res.sendFile(html("contacts.html")));
+function requireLogin(req, res, next) {
+  if (!req.session.user) {
+    return res.redirect("/login");
+  }
+  next();
+}
+
+app.get("/main", requireLogin, (req, res) => res.sendFile(html("main.html")));
+app.get("/tickets", requireLogin, (req, res) => res.sendFile(html("tickets.html")));
+app.get("/contacts", requireLogin, (req, res) => res.sendFile(html("contacts.html")));
+
 app.get("/plans", (req, res) => res.sendFile(html("planes.html")));
 
 
