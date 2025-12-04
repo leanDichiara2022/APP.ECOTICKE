@@ -1,3 +1,5 @@
+<!-- PRUEBA SFTP -->
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,13 +16,17 @@
       height: 500px;
       border: 1px solid #ccc;
       border-radius: 6px;
-      overflow: hidden;
+      overflow: auto;
       background: #fff;
+      padding: 8px;
+      box-sizing: border-box;
     }
-    .preview-box iframe {
+    .preview-box iframe, .preview-box object, .preview-box img {
       width: 100%;
       height: 100%;
       border: none;
+      display: block;
+      object-fit: contain;
     }
     .preview-actions { margin-top: 8px; }
 
@@ -36,6 +42,8 @@
       background: #f7f7f7;
       border: 1px dashed #ddd;
     }
+
+    .small-note { font-size: 0.9em; color:#666; }
   </style>
 
   <!-- 🔥 AGREGADO IMPORTANTE PARA EVITAR CACHE -->
@@ -64,19 +72,18 @@
     <main>
       <!-- Formulario de subida de archivo -->
       <section class="upload-section">
-        <form id="pdfForm" enctype="multipart/form-data" novalidate>
+        <form id="fileForm" enctype="multipart/form-data" novalidate>
           <label for="archivo" class="file-label">Seleccionar archivo:</label>
           <input type="file" id="archivo" name="archivo" accept="*/*" />
         </form>
 
-        <p style="font-size: 0.9em; margin-top: 5px; color: #666;">
-          Podés subir cualquier archivo. Si no es PDF, lo convertimos.
-        </p>
+        <p class="small-note">Podés subir cualquier archivo. Si no es PDF, lo convertimos si lo solicitás.</p>
 
         <p id="pdfMessage" style="margin-top: 10px;"></p>
 
         <div id="uploadedPreview" class="preview-box hidden" style="margin-top:8px;">
-          <iframe id="uploadedIframe" sandbox></iframe>
+          <!-- dinámico: img / object / iframe -->
+          <div id="uploadedPreviewInner"></div>
         </div>
 
         <section class="template-section" style="margin-top:18px;">
@@ -85,6 +92,7 @@
           <div class="template-options">
             <label for="templateSelect" data-i18n="template_label">Selecciona una plantilla predefinida:</label>
             <select id="templateSelect">
+              <option value="">-- Seleccionar --</option>
               <option value="factura_detallada">Detallada</option>
               <option value="factura_simple">Simple</option>
               <option value="factura_editable">Editable</option>
@@ -94,7 +102,7 @@
 
           <div class="upload-template" style="margin-top:8px;">
             <label for="customTemplate" class="file-label" data-i18n="template_custom_label">O subir tu propia plantilla:</label>
-            <input type="file" id="customTemplate" name="customTemplate" accept=".html,.pdf" />
+            <input type="file" id="customTemplate" name="customTemplate" accept=".html,.pdf,.htm" />
           </div>
 
           <div class="preview-actions">
@@ -102,7 +110,7 @@
           </div>
 
           <div id="templatePreview" class="preview-box hidden" style="margin-top:8px;">
-            <iframe id="templateIframe" sandbox></iframe>
+            <div id="templatePreviewInner"></div>
           </div>
         </section>
       </section>
@@ -135,13 +143,18 @@
         <div class="send-options" style="margin-top:12px;">
           <button id="sendWhatsappBtn" type="button" class="send-btn">
             <img src="/images/whatsapp.png" alt="WhatsApp" class="icon" />
-            Enviar
+            Enviar por WhatsApp
           </button>
 
           <button id="sendEmailBtn" type="button" class="send-btn">
             <img src="/images/mail.png" alt="Email" class="icon" />
-            Enviar
+            Enviar por Email
           </button>
+        </div>
+
+        <div style="margin-top:8px;">
+          <button id="detectPrinterBtn" type="button">Detectar impresora (prueba)</button>
+          <span id="printerStatus" class="small-note" style="margin-left:8px;">No detectada</span>
         </div>
       </section>
 
@@ -169,48 +182,271 @@
   <script src="/js/main.js?v=2"></script>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const previewBtn = document.getElementById("previewTemplateBtn");
-      const select = document.getElementById("templateSelect");
-      const previewBox = document.getElementById("templatePreview");
-      const iframe = document.getElementById("templateIframe");
+    // --- Utilidades de preview ---
+    function clearElement(el) {
+      while (el.firstChild) el.removeChild(el.firstChild);
+    }
+
+    function createBlobURL(file) {
+      try {
+        return URL.createObjectURL(file);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function showUploadedPreview(file) {
+      const container = document.getElementById('uploadedPreview');
+      const inner = document.getElementById('uploadedPreviewInner');
+      clearElement(inner);
+
+      const type = file.type || '';
+      const blobUrl = createBlobURL(file);
+
+      if (type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = blobUrl;
+        img.alt = file.name;
+        inner.appendChild(img);
+      } else if (type === 'application/pdf') {
+        // Use object to better preview PDFs
+        const obj = document.createElement('object');
+        obj.type = 'application/pdf';
+        obj.data = blobUrl;
+        obj.width = '100%';
+        obj.height = '100%';
+        inner.appendChild(obj);
+      } else if (type.startsWith('text/')) {
+        // render text files
+        const iframe = document.createElement('iframe');
+        fetch(blobUrl).then(r=>r.text()).then(txt=>{
+          iframe.srcdoc = '<pre style="white-space:pre-wrap; font-family:monospace; padding:8px;">'+
+            (escapeHtml(txt))+'</pre>';
+        }).catch(()=>{ iframe.src = blobUrl; });
+        inner.appendChild(iframe);
+      } else if (blobUrl) {
+        // For unknown types provide a download link + try to embed in iframe
+        const iframe = document.createElement('iframe');
+        iframe.src = blobUrl;
+        iframe.title = file.name;
+
+        const dl = document.createElement('div');
+        dl.innerHTML = '<p class="small-note">Vista previa limitada. <a id="dlLink" href="#">Descargar</a></p>';
+        inner.appendChild(dl);
+        inner.appendChild(iframe);
+        const a = dl.querySelector('#dlLink');
+        a.href = blobUrl;
+        a.download = file.name;
+      } else {
+        inner.textContent = 'No se puede previsualizar este archivo. Descargalo para verlo.';
+      }
+
+      container.classList.remove('hidden');
+    }
+
+    function escapeHtml(s) {
+      return (s||'')
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/\'/g,'&#039;');
+    }
+
+    // --- Template preview handling ---
+    async function showTemplatePreviewFromName(name) {
+      const container = document.getElementById('templatePreview');
+      const inner = document.getElementById('templatePreviewInner');
+      clearElement(inner);
+
+      if (!name) return alert('⚠️ Seleccioná una plantilla');
+
+      // Try first a static server path /templates/<name>.html
+      try {
+        const resp = await fetch(`/templates/${encodeURIComponent(name)}.html`, {cache:'no-store'});
+        if (resp.ok) {
+          const html = await resp.text();
+          const iframe = document.createElement('iframe');
+          iframe.srcdoc = html;
+          inner.appendChild(iframe);
+          container.classList.remove('hidden');
+          return;
+        }
+      } catch (e) {
+        // ignore and try alt
+      }
+
+      // fallback to server preview route
+      const iframe = document.createElement('iframe');
+      iframe.src = `/preview/${encodeURIComponent(name)}`;
+      inner.appendChild(iframe);
+      container.classList.remove('hidden');
+    }
+
+    function showTemplatePreviewFromFile(file) {
+      const container = document.getElementById('templatePreview');
+      const inner = document.getElementById('templatePreviewInner');
+      clearElement(inner);
+
+      const type = file.type || '';
+      const blobUrl = createBlobURL(file);
+
+      if (type === 'application/pdf') {
+        const obj = document.createElement('object');
+        obj.data = blobUrl;
+        obj.type = 'application/pdf';
+        inner.appendChild(obj);
+      } else {
+        const iframe = document.createElement('iframe');
+        if (type === 'text/html' || file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+          // read as text to avoid CSP restrictions
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            iframe.srcdoc = ev.target.result;
+          };
+          reader.readAsText(file);
+        } else {
+          iframe.src = blobUrl;
+        }
+        inner.appendChild(iframe);
+      }
+
+      container.classList.remove('hidden');
+    }
+
+    // --- File input handlers ---
+    document.addEventListener('DOMContentLoaded', () => {
+      const fileInput = document.getElementById('archivo');
+      if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+          const f = e.target.files?.[0];
+          if (!f) return;
+          showUploadedPreview(f);
+          document.getElementById('pdfMessage').textContent = `Archivo listo: ${f.name}`;
+        });
+      }
+
+      // Template preview from select
+      const previewBtn = document.getElementById('previewTemplateBtn');
+      const select = document.getElementById('templateSelect');
+      const customTemplateInput = document.getElementById('customTemplate');
 
       if (previewBtn) {
-        previewBtn.addEventListener("click", (e) => {
+        previewBtn.addEventListener('click', (e) => {
           e.preventDefault();
           const value = select.value;
-          if (!value) return alert("⚠️ Seleccioná una plantilla");
-
-          iframe.src = `/preview/${encodeURIComponent(value)}`;
-          previewBox.classList.remove("hidden");
+          if (value) {
+            showTemplatePreviewFromName(value);
+            return;
+          }
+          // if no selection and custom file present, show that
+          const f = customTemplateInput.files?.[0];
+          if (f) {
+            showTemplatePreviewFromFile(f);
+            return;
+          }
+          alert('⚠️ Seleccioná una plantilla o subí una propia');
         });
       }
 
-      const customTemplateInput = document.getElementById("customTemplate");
       if (customTemplateInput) {
-        customTemplateInput.addEventListener("change", (e) => {
+        customTemplateInput.addEventListener('change', (e) => {
           const f = e.target.files?.[0];
           if (!f) return;
-          const url = URL.createObjectURL(f);
-          iframe.src = url;
-          previewBox.classList.remove("hidden");
+          showTemplatePreviewFromFile(f);
         });
       }
 
-      const fileInput = document.getElementById("archivo");
-      const uploadedPreview = document.getElementById("uploadedPreview");
-      const uploadedIframe = document.getElementById("uploadedIframe");
+      // --- Send buttons ---
+      const sendWhatsappBtn = document.getElementById('sendWhatsappBtn');
+      const sendEmailBtn = document.getElementById('sendEmailBtn');
 
-      if (fileInput) {
-        fileInput.addEventListener("change", (e) => {
-          const f = e.target.files?.[0];
-          if (!f) return;
+      async function sendFileToEndpoint(url, extra = {}) {
+        const file = document.getElementById('archivo').files?.[0];
+        if (!file) return alert('⚠️ Primero seleccioná un archivo');
 
-          const url = URL.createObjectURL(f);
-          uploadedIframe.src = url;
-          uploadedPreview.classList.remove("hidden");
+        const phone = document.getElementById('phoneNumber').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const extraDetails = document.getElementById('extraDetails').value.trim();
+
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('filename', file.name);
+        fd.append('phone', phone);
+        fd.append('email', email);
+        fd.append('extra', extraDetails);
+        for (const k in extra) fd.append(k, extra[k]);
+
+        try {
+          const resp = await fetch(url, {
+            method: 'POST',
+            body: fd,
+            credentials: 'include'
+          });
+          const data = await resp.json().catch(()=>({ok:resp.ok}));
+          if (!resp.ok) return alert('Error: '+(data.message||data.error||JSON.stringify(data)));
+          if (data && data.url) {
+            // if server returned a whatsapp link
+            window.open(data.url, '_blank');
+          }
+          if (typeof showToast === 'function') showToast('Envío solicitado', 'success');
+          else alert('Envío solicitado correctamente');
+        } catch (err) {
+          console.error(err);
+          alert('Error enviando. Revisa la consola.');
+        }
+      }
+
+      if (sendWhatsappBtn) {
+        sendWhatsappBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          // endpoint assumed: /api/send/whatsapp
+          sendFileToEndpoint('/api/send/whatsapp');
         });
       }
+
+      if (sendEmailBtn) {
+        sendEmailBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          // endpoint assumed: /api/send/email
+          sendFileToEndpoint('/api/send/email');
+        });
+      }
+
+      // Printer detection (best-effort): listens for WebUSB connect events and queries navigator.usb
+      const detectPrinterBtn = document.getElementById('detectPrinterBtn');
+      const printerStatus = document.getElementById('printerStatus');
+
+      async function detectPrinter() {
+        if (navigator.usb) {
+          try {
+            const devices = await navigator.usb.getDevices();
+            if (devices && devices.length) {
+              printerStatus.textContent = 'Impresora detectada (USB)';
+              if (typeof showToast === 'function') showToast('Impresora detectada', 'success');
+              // you can add automatic open of main print area here
+              return true;
+            }
+          } catch (e) {
+            console.warn('WebUSB error', e);
+          }
+        }
+        // fallback: check user agent or print availability
+        if (window.matchMedia) {
+          // no reliable way — show not detected
+        }
+        printerStatus.textContent = 'No detectada';
+        return false;
+      }
+
+      if (detectPrinterBtn) {
+        detectPrinterBtn.addEventListener('click', async () => {
+          await detectPrinter();
+        });
+      }
+
+      // Auto-detect on load (best-effort)
+      detectPrinter().catch(()=>{});
     });
   </script>
 
@@ -220,6 +456,7 @@
         const { ipcRenderer } = require("electron");
         ipcRenderer.on("new-print-file", (event, filePath) => {
           if (typeof showToast === "function") showToast("📄 Nuevo archivo detectado", "success");
+          // if an external print flow exists, you can trigger UI to show preview
         });
       } catch {}
     }
