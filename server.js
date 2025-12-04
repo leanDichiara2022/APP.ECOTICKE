@@ -58,7 +58,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: isProduction,
+      secure: isProduction, // asegúrate NODE_ENV=production si usás HTTPS
       httpOnly: true,
       sameSite: isProduction ? "strict" : "lax",
     },
@@ -66,22 +66,51 @@ app.use(
 );
 
 // ===============================
-// MongoDB
+// MongoDB - CONEXIÓN ROBUSTA
 // ===============================
-mongoose
-  .connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ecoticke")
-  .then(() => console.log("✅ MongoDB conectado correctamente"))
-  .catch((err) => console.error("❌ Error al conectar a MongoDB:", err.message));
+/*
+  Recomendaciones:
+  - Asegurate que MONGO_URI esté en .env o que apunte a tu servidor Mongo.
+  - Si usás Mongo local: mongodb://127.0.0.1:27017/ecoticke
+  - Si usás Atlas: la cadena de conexión completa.
+*/
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ecoticke";
+
+async function connectWithRetry() {
+  try {
+    // Opciones recomendadas para evitar buffering indeterminado
+    await mongoose.connect(MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000, // time to try selecting a server (ms)
+      socketTimeoutMS: 45000,
+    });
+    console.log("✅ MongoDB conectado correctamente (URI:", MONGO_URI.split("@").slice(-1)[0], ")");
+  } catch (err) {
+    console.error("❌ Error al conectar a MongoDB:", err.message);
+    console.error("   Intentando reconexión en 5s...");
+    setTimeout(connectWithRetry, 5000);
+  }
+}
+
+// Evitar buffering silencioso: logueamos eventos
+mongoose.connection.on("error", (err) => {
+  console.error("MongoDB connection error:", err && err.message ? err.message : err);
+});
+mongoose.connection.on("disconnected", () => {
+  console.warn("MongoDB desconectado. Reintentando conexión...");
+});
+mongoose.connection.on("connected", () => {
+  console.log("MongoDB: conectado (evento).");
+});
+
+connectWithRetry();
 
 // ===============================
 // Static public folder
 // ===============================
 const publicPath = path.join(__dirname, "public");
 app.use(express.static(publicPath));
-
-// ===============================
-// ❌ ELIMINADO — Manejo de token por Query
-// ===============================
 
 // ===============================
 // Rutas HTML
@@ -91,6 +120,7 @@ const html = (file) => path.join(publicPath, file);
 app.get("/", (req, res) => res.sendFile(html("index.html")));
 app.get("/login", (req, res) => res.sendFile(html("login.html")));
 app.get("/register", (req, res) => res.sendFile(html("register.html")));
+
 function requireLogin(req, res, next) {
   if (!req.session.user) {
     return res.redirect("/login");
@@ -103,7 +133,6 @@ app.get("/tickets", requireLogin, (req, res) => res.sendFile(html("tickets.html"
 app.get("/contacts", requireLogin, (req, res) => res.sendFile(html("contacts.html")));
 
 app.get("/plans", (req, res) => res.sendFile(html("planes.html")));
-
 
 // ===============================
 // MercadoPago
@@ -145,7 +174,13 @@ app.get("/health", (req, res) => {
 // Fallback 404
 // ===============================
 app.use((req, res) => {
-  res.status(404).sendFile(html("404.html"));
+  // Si no existe 404.html, enviamos texto simple
+  const file404 = html("404.html");
+  try {
+    return res.status(404).sendFile(file404);
+  } catch (err) {
+    return res.status(404).send("404 Not found");
+  }
 });
 
 // ===============================
@@ -154,4 +189,3 @@ app.use((req, res) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Servidor corriendo en http://0.0.0.0:${PORT}`);
 });
-/////////////////////////
