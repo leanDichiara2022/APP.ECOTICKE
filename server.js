@@ -1,5 +1,6 @@
 require("dotenv").config();
 require("./db");
+
 const express = require("express");
 const path = require("path");
 const mongoose = require("mongoose");
@@ -7,7 +8,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
-const session = require("express-session");
+const cookieParser = require("cookie-parser");
 const mercadopago = require("mercadopago");
 
 const app = express();
@@ -20,6 +21,10 @@ const isProduction = process.env.NODE_ENV === "production";
 app.use(express.json({ limit: "500mb" }));
 app.use(express.urlencoded({ extended: true, limit: "500mb" }));
 
+// Cookies para JWT
+app.use(cookieParser());
+
+// CORS seguro para envío de cookies
 app.use(
   cors({
     origin: [
@@ -50,43 +55,19 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ===============================
-// Sesiones
-// ===============================
-app.set("trust proxy", 1);
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "clave_super_segura",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: isProduction, // asegúrate NODE_ENV=production si usás HTTPS
-      httpOnly: true,
-      sameSite: isProduction ? "strict" : "lax",
-    },
-  })
-);
-
-// ===============================
 // MongoDB - CONEXIÓN ROBUSTA
 // ===============================
-/*
-  Recomendaciones:
-  - Asegurate que MONGO_URI esté en .env o que apunte a tu servidor Mongo.
-  - Si usás Mongo local: mongodb://127.0.0.1:27017/ecoticke
-  - Si usás Atlas: la cadena de conexión completa.
-*/
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ecoticke";
 
 async function connectWithRetry() {
   try {
-    // Opciones recomendadas para evitar buffering indeterminado
     await mongoose.connect(MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 10000, // time to try selecting a server (ms)
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
     });
-    console.log("✅ MongoDB conectado correctamente (URI:", MONGO_URI.split("@").slice(-1)[0], ")");
+    console.log("✅ MongoDB conectado correctamente");
   } catch (err) {
     console.error("❌ Error al conectar a MongoDB:", err.message);
     console.error("   Intentando reconexión en 5s...");
@@ -94,15 +75,14 @@ async function connectWithRetry() {
   }
 }
 
-// Evitar buffering silencioso: logueamos eventos
 mongoose.connection.on("error", (err) => {
-  console.error("MongoDB connection error:", err && err.message ? err.message : err);
+  console.error("MongoDB error:", err.message);
 });
 mongoose.connection.on("disconnected", () => {
-  console.warn("MongoDB desconectado. Reintentando conexión...");
+  console.warn("MongoDB desconectado, reintentando...");
 });
 mongoose.connection.on("connected", () => {
-  console.log("MongoDB: conectado (evento).");
+  console.log("MongoDB EVENTO: conectado.");
 });
 
 connectWithRetry();
@@ -114,25 +94,16 @@ const publicPath = path.join(__dirname, "public");
 app.use(express.static(publicPath));
 
 // ===============================
-// Rutas HTML
+// Rutas Frontend HTML
 // ===============================
 const html = (file) => path.join(publicPath, file);
 
 app.get("/", (req, res) => res.sendFile(html("index.html")));
 app.get("/login", (req, res) => res.sendFile(html("login.html")));
 app.get("/register", (req, res) => res.sendFile(html("register.html")));
-
-function requireLogin(req, res, next) {
-  if (!req.session.user) {
-    return res.redirect("/login");
-  }
-  next();
-}
-
-app.get("/main", requireLogin, (req, res) => res.sendFile(html("main.html")));
-app.get("/tickets", requireLogin, (req, res) => res.sendFile(html("tickets.html")));
-app.get("/contacts", requireLogin, (req, res) => res.sendFile(html("contacts.html")));
-
+app.get("/main", (req, res) => res.sendFile(html("main.html")));
+app.get("/tickets", (req, res) => res.sendFile(html("tickets.html")));
+app.get("/contacts", (req, res) => res.sendFile(html("contacts.html")));
 app.get("/plans", (req, res) => res.sendFile(html("planes.html")));
 
 // ===============================
@@ -159,7 +130,7 @@ try {
   app.use("/mercadopago", require("./routes/mercadopago"));
   app.use("/paypal", require("./routes/paypal"));
   app.use("/api/pdf", require("./routes/pdfRoutes"));
-  console.log("📡 Todas las rutas API montadas correctamente");
+  console.log("📡 Todas las rutas API cargadas correctamente");
 } catch (err) {
   console.error("❌ Error cargando rutas API:", err.message);
 }
@@ -175,12 +146,11 @@ app.get("/health", (req, res) => {
 // Fallback 404
 // ===============================
 app.use((req, res) => {
-  // Si no existe 404.html, enviamos texto simple
   const file404 = html("404.html");
   try {
-    return res.status(404).sendFile(file404);
+    res.status(404).sendFile(file404);
   } catch (err) {
-    return res.status(404).send("404 Not found");
+    res.status(404).send("404 Not found");
   }
 });
 

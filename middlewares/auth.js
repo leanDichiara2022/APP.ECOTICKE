@@ -1,32 +1,27 @@
 // middlewares/auth.js
 const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET || "clave_super_segura";
 
 module.exports = function (req, res, next) {
-  // Permitimos pasar sin token para las páginas HTML.
-  // Para APIs, si hay token lo validamos, si no hay token dejamos pasar.
   let token =
+    (req.cookies && req.cookies.token) ||
     req.header("x-auth-token") ||
     req.header("authorization") ||
     (req.query && req.query.token) ||
     null;
 
-  if (!token) {
-    // No hay token -> no bloqueamos, simplemente continuamos
-    return next();
-  }
+  if (!token) return next();
 
-  // Si viene con "Bearer ..."
   if (typeof token === "string" && token.startsWith("Bearer ")) {
     token = token.slice(7).trim();
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || process.env.SESSION_SECRET || "clave_super_segura");
-    // Guardamos datos mínimos en req.user si vienen
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
     return next();
   } catch (err) {
-    // Token inválido -> no bloqueamos (esto evita redirecciones inesperadas)
+    // Token inválido -> seguimos sin bloquear
     return next();
   }
 };
