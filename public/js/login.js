@@ -3,13 +3,12 @@ document.addEventListener("DOMContentLoaded", function () {
   const loginForm = document.getElementById("loginForm");
   const message = document.getElementById("loginMessage");
 
-  // Generar o recuperar deviceId único
+  // Crear o recuperar deviceId
   let deviceId = localStorage.getItem("deviceId");
   if (!deviceId) {
     try {
       deviceId = crypto.randomUUID();
     } catch (e) {
-      // fallback para navegadores antiguos
       deviceId = "device-" + Date.now() + "-" + Math.random().toString(36).slice(2);
     }
     localStorage.setItem("deviceId", deviceId);
@@ -22,60 +21,51 @@ document.addEventListener("DOMContentLoaded", function () {
     const password = document.getElementById("password").value.trim();
 
     if (!email || !password) {
-      if (message) {
-        message.textContent = "Por favor, completa todos los campos.";
-        message.className = "message error";
-      } else {
-        alert("Por favor, completa todos los campos.");
-      }
+      mostrarMensaje("Por favor, completa todos los campos.", "error");
       return;
     }
 
     try {
-      const response = await fetch("/api/usuarios/login", {
+      const response = await fetch("https://ecoticke.com/api/usuarios/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        credentials: "include", // NECESARIO para cookies
         body: JSON.stringify({ email, password, deviceId }),
       });
 
-      let result;
-      try {
-        result = await response.json();
-      } catch {
-        throw new Error("Respuesta del servidor no válida.");
+      const result = await response.json().catch(() => null);
+
+      if (!result) {
+        mostrarMensaje("Error: respuesta del servidor no válida.", "error");
+        return;
       }
 
       if (response.ok) {
-        // Guardar token en localStorage bajo la clave "authToken"
+        // Guardar token si vino en el body
         if (result.token) localStorage.setItem("authToken", result.token);
-        localStorage.setItem("user", JSON.stringify(result.user || {}));
+        if (result.user) localStorage.setItem("user", JSON.stringify(result.user));
 
-        if (message) {
-          message.textContent = "Inicio de sesión exitoso. Redirigiendo...";
-          message.className = "message success";
-        }
+        mostrarMensaje("Inicio de sesión exitoso. Redirigiendo...", "success");
 
-        // Redirigir a main.html (sin token en URL — veremos en main.js si aparece token externo)
         setTimeout(() => {
           window.location.href = "/main.html";
-        }, 500);
+        }, 600);
       } else {
-        if (message) {
-          message.textContent = result.message || "Error al iniciar sesión.";
-          message.className = "message error";
-        } else {
-          alert(result.message || "Error al iniciar sesión.");
-        }
+        mostrarMensaje(result.error || "Error al iniciar sesión.", "error");
       }
+
     } catch (error) {
-      console.error("Error:", error);
-      if (message) {
-        message.textContent = "Hubo un error al conectar con el servidor.";
-        message.className = "message error";
-      } else {
-        alert("Hubo un error al conectar con el servidor.");
-      }
+      console.error("Login error:", error);
+      mostrarMensaje("Hubo un problema al conectar con el servidor.", "error");
     }
   });
+
+  function mostrarMensaje(text, type) {
+    if (!message) return alert(text);
+    message.textContent = text;
+    message.className = "message " + type;
+  }
 });
