@@ -1,15 +1,19 @@
-// routes/usuarios.js
 const express = require("express");
 const router = express.Router();
 const Usuario = require("../models/usuarios");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// Helper: obtener secret y secure desde env
-const JWT_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET || "clave_super_segura";
-const COOKIE_SECURE = process.env.COOKIE_SECURE === "true"; // setear en .env según HTTPS
+// 🔥 IMPORTANTE: tu server corre sin HTTPS → secure:false y sameSite:lax
+const JWT_SECRET =
+  process.env.SESSION_SECRET ||
+  process.env.JWT_SECRET ||
+  "clave_super_segura";
 
-// GET listado de usuarios (solo para pruebas)
+// SIEMPRE false porque tu sitio no usa HTTPS internamente
+const COOKIE_SECURE = false; 
+
+// GET listado (pruebas)
 router.get("/", async (req, res) => {
   try {
     const users = await Usuario.find().select("-password");
@@ -51,10 +55,12 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Login -> genera JWT y cookie
+// LOGIN
 router.post("/login", async (req, res) => {
   try {
     const { email, password, deviceId } = req.body;
+
+    console.log("📥 Login recibido:", { email, passwordOK: !!password, deviceId });
 
     if (!email || !password) {
       return res.status(400).json({ error: "Faltan datos" });
@@ -62,29 +68,31 @@ router.post("/login", async (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
     const usuario = await Usuario.findOne({ email: normalizedEmail });
+
     if (!usuario) {
+      console.log("❌ Usuario no encontrado:", normalizedEmail);
       return res.status(400).json({ error: "Usuario no encontrado" });
     }
 
     const match = await bcrypt.compare(password, usuario.password);
     if (!match) {
+      console.log("❌ Contraseña incorrecta");
       return res.status(400).json({ error: "Contraseña incorrecta" });
     }
 
-    // Generar token con payload mínimo
+    // Token
     const payload = { id: usuario._id, email: usuario.email, nombre: usuario.nombre };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "8h" });
 
-    // Mandar cookie - asegurar sameSite/secure correctos
+    // COOKIE compatible con tu servidor actual
     res.cookie("token", token, {
       httpOnly: true,
-      secure: COOKIE_SECURE,          // true en producción con HTTPS, false para pruebas locales HTTP
-      sameSite: COOKIE_SECURE ? "none" : "lax", // si secure=true necesita none
+      secure: false,      // 🔥 obligatorio porque no tenés HTTPS interno
+      sameSite: "lax",
       path: "/",
-      maxAge: 8 * 60 * 60 * 1000, // 8 horas
+      maxAge: 8 * 60 * 60 * 1000,
     });
 
-    // También devolver user y token en body por si frontend lo quiere usar (opcional)
     res.json({
       message: "Login exitoso",
       user: { id: usuario._id, nombre: usuario.nombre, email: usuario.email },
@@ -96,14 +104,20 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Verificar sesión: lee cookie token o header Authorization
+// Sesión
 router.get("/session", (req, res) => {
   try {
     let token = null;
-    if (req.cookies && req.cookies.token) token = req.cookies.token;
+
+    if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
+
     if (!token && req.header("authorization")) {
       const header = req.header("authorization");
-      if (header.startsWith("Bearer ")) token = header.slice(7).trim();
+      if (header.startsWith("Bearer ")) {
+        token = header.slice(7).trim();
+      }
     }
 
     if (!token) return res.json({ loggedIn: false });
@@ -115,12 +129,12 @@ router.get("/session", (req, res) => {
   }
 });
 
-// Logout -> borra cookie
+// Logout
 router.post("/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
-    secure: COOKIE_SECURE,
-    sameSite: COOKIE_SECURE ? "none" : "lax",
+    secure: false,
+    sameSite: "lax",
     path: "/",
   });
   res.json({ message: "Sesión cerrada" });

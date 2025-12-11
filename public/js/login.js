@@ -1,9 +1,8 @@
-// public/js/login.js
 document.addEventListener("DOMContentLoaded", function () {
   const loginForm = document.getElementById("loginForm");
   const message = document.getElementById("loginMessage");
 
-  // Crear o recuperar deviceId
+  // Crear / recuperar deviceId
   let deviceId = localStorage.getItem("deviceId");
   if (!deviceId) {
     try {
@@ -26,11 +25,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     try {
+      console.log("📤 Enviando login:", { email, passwordOK: !!password, deviceId });
+
       const response = await fetch("/api/usuarios/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
+          Accept: "application/json",
         },
         credentials: "include",
         body: JSON.stringify({ email, password, deviceId }),
@@ -55,7 +56,6 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         mostrarMensaje(result.error || "Error al iniciar sesión.", "error");
       }
-
     } catch (error) {
       console.error("Login error:", error);
       mostrarMensaje("Hubo un problema al conectar con el servidor.", "error");
