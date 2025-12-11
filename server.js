@@ -90,8 +90,22 @@ connectWithRetry();
 // ===============================
 // Static public folder
 // ===============================
+
 const publicPath = path.join(__dirname, "public");
-app.use(express.static(publicPath));
+
+// 🔍 LOGS DE DIAGNÓSTICO — NO TOCAN NADA
+console.log("DIAGNOSTICO: __dirname =", __dirname);
+console.log("DIAGNOSTICO: publicPath =", publicPath);
+console.log("DIAGNOSTICO: process.cwd() =", process.cwd());
+
+app.use(express.static(publicPath, {
+  setHeaders: (res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+  }
+}));
+
 
 // ===============================
 // Rutas Frontend HTML
