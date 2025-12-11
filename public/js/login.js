@@ -26,13 +26,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     try {
-      const response = await fetch("https://ecoticke.com/api/usuarios/login", {
+      const response = await fetch("/api/usuarios/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
         },
-        credentials: "include", // NECESARIO para cookies
+        credentials: "include",
         body: JSON.stringify({ email, password, deviceId }),
       });
 
@@ -44,7 +44,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       if (response.ok) {
-        // Guardar token si vino en el body
         if (result.token) localStorage.setItem("authToken", result.token);
         if (result.user) localStorage.setItem("user", JSON.stringify(result.user));
 
