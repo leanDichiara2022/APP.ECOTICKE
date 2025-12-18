@@ -90,7 +90,6 @@ connectWithRetry();
 // ===============================
 // Static public folder
 // ===============================
-
 const publicPath = path.join(__dirname, "public");
 
 // 🔍 LOGS DE DIAGNÓSTICO — NO TOCAN NADA
@@ -98,14 +97,18 @@ console.log("DIAGNOSTICO: __dirname =", __dirname);
 console.log("DIAGNOSTICO: publicPath =", publicPath);
 console.log("DIAGNOSTICO: process.cwd() =", process.cwd());
 
-app.use(express.static(publicPath, {
-  setHeaders: (res) => {
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
-    res.setHeader("Pragma", "no-cache");
-    res.setHeader("Expires", "0");
-  }
-}));
-
+app.use(
+  express.static(publicPath, {
+    setHeaders: (res) => {
+      res.setHeader(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, private"
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+    },
+  })
+);
 
 // ===============================
 // Rutas Frontend HTML
@@ -127,7 +130,9 @@ try {
   if (typeof mercadopago.configure === "function") {
     mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
   } else if (mercadopago.configurations?.setAccessToken) {
-    mercadopago.configurations.setAccessToken(process.env.MP_ACCESS_TOKEN);
+    mercadopago.configurations.setAccessToken(
+      process.env.MP_ACCESS_TOKEN
+    );
   }
   console.log("💳 MercadoPago configurado correctamente");
 } catch (err) {
@@ -144,6 +149,10 @@ try {
   app.use("/mercadopago", require("./routes/mercadopago"));
   app.use("/paypal", require("./routes/paypal"));
   app.use("/api/pdf", require("./routes/pdfRoutes"));
+
+  // 🔥 RUTAS DEFINITIVAS PARA EMAIL Y WHATSAPP
+  app.use("/api", require("./routes/send"));
+
   console.log("📡 Todas las rutas API cargadas correctamente");
 } catch (err) {
   console.error("❌ Error cargando rutas API:", err.message);
