@@ -140,19 +140,17 @@ try {
 }
 
 // ===============================
+
 // API Routes
 // ===============================
 try {
   app.use("/api/usuarios", require("./routes/usuarios"));
   app.use("/api/tickets", require("./routes/tickets"));
   app.use("/api/contacts", require("./routes/contacts"));
+  app.use("/api", require("./routes/send")); // ✅ ESTA ERA LA QUE FALTABA
   app.use("/mercadopago", require("./routes/mercadopago"));
   app.use("/paypal", require("./routes/paypal"));
   app.use("/api/pdf", require("./routes/pdfRoutes"));
-
-  // 🔥 RUTAS DEFINITIVAS PARA EMAIL Y WHATSAPP
-  app.use("/api", require("./routes/send"));
-
   console.log("📡 Todas las rutas API cargadas correctamente");
 } catch (err) {
   console.error("❌ Error cargando rutas API:", err.message);
