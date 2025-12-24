@@ -21,10 +21,8 @@ const isProduction = process.env.NODE_ENV === "production";
 app.use(express.json({ limit: "500mb" }));
 app.use(express.urlencoded({ extended: true, limit: "500mb" }));
 
-// Cookies para JWT
 app.use(cookieParser());
 
-// CORS seguro para envío de cookies
 app.use(
   cors({
     origin: [
@@ -55,7 +53,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ===============================
-// MongoDB - CONEXIÓN ROBUSTA
+// MongoDB
 // ===============================
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ecoticke";
 
@@ -67,51 +65,34 @@ async function connectWithRetry() {
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
     });
-    console.log("✅ MongoDB conectado correctamente");
+    console.log("✅ MongoDB conectado");
   } catch (err) {
-    console.error("❌ Error al conectar a MongoDB:", err.message);
-    console.error("   Intentando reconexión en 5s...");
+    console.error("❌ Error MongoDB:", err.message);
     setTimeout(connectWithRetry, 5000);
   }
 }
 
-mongoose.connection.on("error", (err) => {
-  console.error("MongoDB error:", err.message);
-});
-mongoose.connection.on("disconnected", () => {
-  console.warn("MongoDB desconectado, reintentando...");
-});
-mongoose.connection.on("connected", () => {
-  console.log("MongoDB EVENTO: conectado.");
-});
-
 connectWithRetry();
 
 // ===============================
-// Static public folder
+// Public
 // ===============================
 const publicPath = path.join(__dirname, "public");
+app.use(express.static(publicPath));
 
-// 🔍 LOGS DE DIAGNÓSTICO — NO TOCAN NADA
-console.log("DIAGNOSTICO: __dirname =", __dirname);
-console.log("DIAGNOSTICO: publicPath =", publicPath);
-console.log("DIAGNOSTICO: process.cwd() =", process.cwd());
-
+// ⚠️ ESTA ES LA CLAVE PARA QUE FUNCIONE EL LINK
+const pdfPath = path.join(__dirname, "generated_pdfs");
 app.use(
-  express.static(publicPath, {
+  "/generated_pdfs",
+  express.static(pdfPath, {
     setHeaders: (res) => {
-      res.setHeader(
-        "Cache-Control",
-        "no-store, no-cache, must-revalidate, private"
-      );
-      res.setHeader("Pragma", "no-cache");
-      res.setHeader("Expires", "0");
+      res.setHeader("Cache-Control", "no-store");
     },
   })
 );
 
 // ===============================
-// Rutas Frontend HTML
+// HTML routes
 // ===============================
 const html = (file) => path.join(publicPath, file);
 
@@ -130,54 +111,36 @@ try {
   if (typeof mercadopago.configure === "function") {
     mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
   } else if (mercadopago.configurations?.setAccessToken) {
-    mercadopago.configurations.setAccessToken(
-      process.env.MP_ACCESS_TOKEN
-    );
+    mercadopago.configurations.setAccessToken(process.env.MP_ACCESS_TOKEN);
   }
-  console.log("💳 MercadoPago configurado correctamente");
+  console.log("💳 MercadoPago listo");
 } catch (err) {
-  console.error("⚠️ Error configurando MercadoPago:", err.message);
+  console.error("⚠️ MP error:", err.message);
 }
 
 // ===============================
-
 // API Routes
 // ===============================
-try {
-  app.use("/api/usuarios", require("./routes/usuarios"));
-  app.use("/api/tickets", require("./routes/tickets"));
-  app.use("/api/contacts", require("./routes/contacts"));
-  app.use("/api", require("./routes/send")); // ✅ ESTA ERA LA QUE FALTABA
-  app.use("/mercadopago", require("./routes/mercadopago"));
-  app.use("/paypal", require("./routes/paypal"));
-  app.use("/api/pdf", require("./routes/pdfRoutes"));
-  console.log("📡 Todas las rutas API cargadas correctamente");
-} catch (err) {
-  console.error("❌ Error cargando rutas API:", err.message);
-}
+app.use("/api/usuarios", require("./routes/usuarios"));
+app.use("/api/tickets", require("./routes/tickets"));
+app.use("/api/contacts", require("./routes/contacts"));
+app.use("/api", require("./routes/send"));
+app.use("/mercadopago", require("./routes/mercadopago"));
+app.use("/paypal", require("./routes/paypal"));
+app.use("/api/pdf", require("./routes/pdfRoutes"));
 
 // ===============================
-// Health check
+// Health
 // ===============================
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "OK", message: "ECOTICKE Server Running" });
+  res.json({ ok: true });
 });
 
 // ===============================
-// Fallback 404
+// 404
 // ===============================
-app.use((req, res) => {
-  const file404 = html("404.html");
-  try {
-    res.status(404).sendFile(file404);
-  } catch (err) {
-    res.status(404).send("404 Not found");
-  }
-});
+app.use((req, res) => res.status(404).send("404"));
 
-// ===============================
-// Start
-// ===============================
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ Servidor corriendo en http://0.0.0.0:${PORT}`);
+  console.log(`🚀 Running on http://0.0.0.0:${PORT}`);
 });

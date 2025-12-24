@@ -47,7 +47,6 @@
     .small-note { font-size: 0.9em; color:#666; }
   </style>
 
-  <!-- 🔥 AGREGADO IMPORTANTE PARA EVITAR CACHE -->
   <meta http-equiv="Cache-Control" content="no-store" />
 </head>
 
@@ -71,7 +70,6 @@
     </header>
 
     <main>
-      <!-- Formulario de subida de archivo -->
       <section class="upload-section">
         <form id="fileForm" enctype="multipart/form-data" novalidate>
           <label for="archivo" class="file-label">Seleccionar archivo:</label>
@@ -83,7 +81,6 @@
         <p id="pdfMessage" style="margin-top: 10px;"></p>
 
         <div id="uploadedPreview" class="preview-box hidden" style="margin-top:8px;">
-          <!-- dinámico: img / object / iframe -->
           <div id="uploadedPreviewInner"></div>
         </div>
 
@@ -178,22 +175,21 @@
     </footer>
   </div>
 
-  <!-- Scripts -->
   <script src="/scripts/scripts.js?v=2"></script>
   <script src="/js/main.js?v=2"></script>
 
+  <!-- 🔥 AGREGO ESTO: fuerza dominio real y NO localhost -->
   <script>
-    // --- Utilidades de preview ---
+    const BASE_URL = window.location.origin;
+  </script>
+
+  <script>
     function clearElement(el) {
       while (el.firstChild) el.removeChild(el.firstChild);
     }
 
     function createBlobURL(file) {
-      try {
-        return URL.createObjectURL(file);
-      } catch (e) {
-        return null;
-      }
+      try { return URL.createObjectURL(file); } catch(e){ return null; }
     }
 
     function showUploadedPreview(file) {
@@ -207,119 +203,25 @@
       if (type.startsWith('image/')) {
         const img = document.createElement('img');
         img.src = blobUrl;
-        img.alt = file.name;
         inner.appendChild(img);
       } else if (type === 'application/pdf') {
-        // Use object to better preview PDFs
         const obj = document.createElement('object');
         obj.type = 'application/pdf';
         obj.data = blobUrl;
-        obj.width = '100%';
-        obj.height = '100%';
         inner.appendChild(obj);
-      } else if (type.startsWith('text/')) {
-        // render text files
-        const iframe = document.createElement('iframe');
-        fetch(blobUrl).then(r=>r.text()).then(txt=>{
-          iframe.srcdoc = '<pre style="white-space:pre-wrap; font-family:monospace; padding:8px;">'+
-            (escapeHtml(txt))+'</pre>';
-        }).catch(()=>{ iframe.src = blobUrl; });
-        inner.appendChild(iframe);
-      } else if (blobUrl) {
-        // For unknown types provide a download link + try to embed in iframe
+      } else {
         const iframe = document.createElement('iframe');
         iframe.src = blobUrl;
-        iframe.title = file.name;
-
-        const dl = document.createElement('div');
-        dl.innerHTML = '<p class="small-note">Vista previa limitada. <a id="dlLink" href="#">Descargar</a></p>';
-        inner.appendChild(dl);
-        inner.appendChild(iframe);
-        const a = dl.querySelector('#dlLink');
-        a.href = blobUrl;
-        a.download = file.name;
-      } else {
-        inner.textContent = 'No se puede previsualizar este archivo. Descargalo para verlo.';
-      }
-
-      container.classList.remove('hidden');
-    }
-
-    function escapeHtml(s) {
-      return (s||'')
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/\'/g,'&#039;');
-    }
-
-    // --- Template preview handling ---
-    async function showTemplatePreviewFromName(name) {
-      const container = document.getElementById('templatePreview');
-      const inner = document.getElementById('templatePreviewInner');
-      clearElement(inner);
-
-      if (!name) return alert('⚠️ Seleccioná una plantilla');
-
-      // Try first a static server path /templates/<name>.html
-      try {
-        const resp = await fetch(`/templates/${encodeURIComponent(name)}.html`, {cache:'no-store'});
-        if (resp.ok) {
-          const html = await resp.text();
-          const iframe = document.createElement('iframe');
-          iframe.srcdoc = html;
-          inner.appendChild(iframe);
-          container.classList.remove('hidden');
-          return;
-        }
-      } catch (e) {
-        // ignore and try alt
-      }
-
-      // fallback to server preview route
-      const iframe = document.createElement('iframe');
-      iframe.src = `/preview/${encodeURIComponent(name)}`;
-      inner.appendChild(iframe);
-      container.classList.remove('hidden');
-    }
-
-    function showTemplatePreviewFromFile(file) {
-      const container = document.getElementById('templatePreview');
-      const inner = document.getElementById('templatePreviewInner');
-      clearElement(inner);
-
-      const type = file.type || '';
-      const blobUrl = createBlobURL(file);
-
-      if (type === 'application/pdf') {
-        const obj = document.createElement('object');
-        obj.data = blobUrl;
-        obj.type = 'application/pdf';
-        inner.appendChild(obj);
-      } else {
-        const iframe = document.createElement('iframe');
-        if (type === 'text/html' || file.name.endsWith('.html') || file.name.endsWith('.htm')) {
-          // read as text to avoid CSP restrictions
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            iframe.srcdoc = ev.target.result;
-          };
-          reader.readAsText(file);
-        } else {
-          iframe.src = blobUrl;
-        }
         inner.appendChild(iframe);
       }
-
       container.classList.remove('hidden');
     }
 
-    // --- File input handlers ---
     document.addEventListener('DOMContentLoaded', () => {
+
       const fileInput = document.getElementById('archivo');
       if (fileInput) {
-        fileInput.addEventListener('change', (e) => {
+        fileInput.addEventListener('change', e => {
           const f = e.target.files?.[0];
           if (!f) return;
           showUploadedPreview(f);
@@ -327,42 +229,11 @@
         });
       }
 
-      // Template preview from select
-      const previewBtn = document.getElementById('previewTemplateBtn');
-      const select = document.getElementById('templateSelect');
-      const customTemplateInput = document.getElementById('customTemplate');
-
-      if (previewBtn) {
-        previewBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          const value = select.value;
-          if (value) {
-            showTemplatePreviewFromName(value);
-            return;
-          }
-          // if no selection and custom file present, show that
-          const f = customTemplateInput.files?.[0];
-          if (f) {
-            showTemplatePreviewFromFile(f);
-            return;
-          }
-          alert('⚠️ Seleccioná una plantilla o subí una propia');
-        });
-      }
-
-      if (customTemplateInput) {
-        customTemplateInput.addEventListener('change', (e) => {
-          const f = e.target.files?.[0];
-          if (!f) return;
-          showTemplatePreviewFromFile(f);
-        });
-      }
-
-      // --- Send buttons ---
       const sendWhatsappBtn = document.getElementById('sendWhatsappBtn');
       const sendEmailBtn = document.getElementById('sendEmailBtn');
 
-      async function sendFileToEndpoint(url, extra = {}) {
+      async function sendFileToEndpoint(url) {
+
         const file = document.getElementById('archivo').files?.[0];
         if (!file) return alert('⚠️ Primero seleccioná un archivo');
 
@@ -376,78 +247,37 @@
         fd.append('phone', phone);
         fd.append('email', email);
         fd.append('extra', extraDetails);
-        for (const k in extra) fd.append(k, extra[k]);
 
         try {
-          const resp = await fetch(url, {
+          const resp = await fetch(`${BASE_URL}${url}`, {   <!-- 👈 CORRECCIÓN CLAVE -->
             method: 'POST',
             body: fd,
             credentials: 'include'
           });
-          const data = await resp.json().catch(()=>({ok:resp.ok}));
-          if (!resp.ok) return alert('Error: '+(data.message||data.error||JSON.stringify(data)));
-          if (data && data.url) {
-            // if server returned a whatsapp link
-            window.open(data.url, '_blank');
-          }
-          if (typeof showToast === 'function') showToast('Envío solicitado', 'success');
-          else alert('Envío solicitado correctamente');
-        } catch (err) {
-          console.error(err);
-          alert('Error enviando. Revisa la consola.');
+
+          const data = await resp.json().catch(()=> ({}));
+
+          if (data?.url) window.open(data.url, '_blank');
+
+        } catch(e){
+          console.error(e);
+          alert('Error en el envío');
         }
       }
 
       if (sendWhatsappBtn) {
-        sendWhatsappBtn.addEventListener('click', (e) => {
+        sendWhatsappBtn.addEventListener('click', e => {
           e.preventDefault();
-          // endpoint assumed: /api/send/whatsapp
           sendFileToEndpoint('/api/send/whatsapp');
         });
       }
 
       if (sendEmailBtn) {
-        sendEmailBtn.addEventListener('click', (e) => {
+        sendEmailBtn.addEventListener('click', e => {
           e.preventDefault();
-          // endpoint assumed: /api/send/email
           sendFileToEndpoint('/api/send/email');
         });
       }
-
-      // Printer detection (best-effort): listens for WebUSB connect events and queries navigator.usb
-      const detectPrinterBtn = document.getElementById('detectPrinterBtn');
-      const printerStatus = document.getElementById('printerStatus');
-
-      async function detectPrinter() {
-        if (navigator.usb) {
-          try {
-            const devices = await navigator.usb.getDevices();
-            if (devices && devices.length) {
-              printerStatus.textContent = 'Impresora detectada (USB)';
-              if (typeof showToast === 'function') showToast('Impresora detectada', 'success');
-              // you can add automatic open of main print area here
-              return true;
-            }
-          } catch (e) {
-            console.warn('WebUSB error', e);
-          }
-        }
-        // fallback: check user agent or print availability
-        if (window.matchMedia) {
-          // no reliable way — show not detected
-        }
-        printerStatus.textContent = 'No detectada';
-        return false;
-      }
-
-      if (detectPrinterBtn) {
-        detectPrinterBtn.addEventListener('click', async () => {
-          await detectPrinter();
-        });
-      }
-
-      // Auto-detect on load (best-effort)
-      detectPrinter().catch(()=>{});
     });
   </script>
 
@@ -457,7 +287,6 @@
         const { ipcRenderer } = require("electron");
         ipcRenderer.on("new-print-file", (event, filePath) => {
           if (typeof showToast === "function") showToast("📄 Nuevo archivo detectado", "success");
-          // if an external print flow exists, you can trigger UI to show preview
         });
       } catch {}
     }
