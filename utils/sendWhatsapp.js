@@ -16,10 +16,8 @@ const generarWhatsappLink = (celular, url, details = "") => {
     throw new Error("La URL del ticket es requerida");
   }
 
-  // Limpia espacios y caracteres que no sean números
   let numero = String(celular).replace(/\D/g, "");
 
-  // Validación mínima (10–15 dígitos aprox.)
   if (numero.length < 10) {
     throw new Error("El número de celular no parece válido");
   }
@@ -30,9 +28,7 @@ const generarWhatsappLink = (celular, url, details = "") => {
     mensaje += `\n\n📋 Detalles:\n${details.trim()}`;
   }
 
-  const link = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
-
-  return link;
+  return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 };
 
 module.exports = generarWhatsappLink;

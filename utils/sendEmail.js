@@ -32,7 +32,6 @@ const sendEmail = async ({ to, subject, html }) => {
   } catch (error) {
     console.error("❌ Error enviando email:", error?.message || error);
 
-    // Propaga error para manejar en servicios superiores
     throw new Error("No se pudo enviar el email. Revisa el log para más detalles.");
   }
 };
