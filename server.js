@@ -10,8 +10,30 @@ const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 const cookieParser = require("cookie-parser");
 const mercadopago = require("mercadopago");
+const fs = require("fs");
 
 const app = express();
+
+// ===============================
+// BASE URL – CLAVE DEL PROBLEMA
+// ===============================
+const FORCED_BASE_URL =
+  process.env.BASE_URL ||
+  process.env.APP_URL ||
+  "https://ecoticke.com"; // <-- SIN LOCALHOST
+
+global.BASE_URL = FORCED_BASE_URL;
+
+// Soporte proxy (nginx / certbot / https)
+app.set("trust proxy", 1);
+
+console.log("======================================");
+console.log("🚀 SERVER INICIADO");
+console.log("BASE_URL USADA  =", global.BASE_URL);
+console.log("NODE_ENV        =", process.env.NODE_ENV);
+console.log("PORT            =", process.env.PORT || 3000);
+console.log("======================================");
+
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -55,7 +77,8 @@ app.use(limiter);
 // ===============================
 // MongoDB
 // ===============================
-const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ecoticke";
+const MONGO_URI =
+  process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ecoticke";
 
 async function connectWithRetry() {
   try {
@@ -80,8 +103,16 @@ connectWithRetry();
 const publicPath = path.join(__dirname, "public");
 app.use(express.static(publicPath));
 
-// ⚠️ ESTA ES LA CLAVE PARA QUE FUNCIONE EL LINK
+// ===============================
+// generated_pdfs (LINK CORRECTO)
+// ===============================
 const pdfPath = path.join(__dirname, "generated_pdfs");
+
+// si no existe lo creo
+if (!fs.existsSync(pdfPath)) {
+  fs.mkdirSync(pdfPath);
+}
+
 app.use(
   "/generated_pdfs",
   express.static(pdfPath, {
@@ -121,6 +152,13 @@ try {
 // ===============================
 // API Routes
 // ===============================
+
+// 👉 rutas ahora pueden usar global.BASE_URL
+app.use((req, res, next) => {
+  req.baseUrlPublic = global.BASE_URL;
+  next();
+});
+
 app.use("/api/usuarios", require("./routes/usuarios"));
 app.use("/api/tickets", require("./routes/tickets"));
 app.use("/api/contacts", require("./routes/contacts"));
@@ -133,7 +171,7 @@ app.use("/api/pdf", require("./routes/pdfRoutes"));
 // Health
 // ===============================
 app.get("/health", (req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, base_url: global.BASE_URL });
 });
 
 // ===============================
@@ -141,6 +179,10 @@ app.get("/health", (req, res) => {
 // ===============================
 app.use((req, res) => res.status(404).send("404"));
 
+// ===============================
+// LISTEN
+// ===============================
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Running on http://0.0.0.0:${PORT}`);
+  console.log(`🌍 Public URL: ${global.BASE_URL}`);
 });
