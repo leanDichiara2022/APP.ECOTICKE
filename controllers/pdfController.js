@@ -5,17 +5,32 @@ const History = require("../models/history");
 const sendEmail = require("../utils/sendEmail");
 const sendWhatsapp = require("../utils/sendWhatsapp");
 
+// 🌍 BASE_URL tomada del servidor
+const BASE_URL = process.env.BASE_URL || "https://ecoticke.com";
+
 const generarPDF = async (req, res) => {
     try {
         const { email, celular } = req.body;
 
+        // asegurar carpeta
+        const dir = path.join(__dirname, "..", "generated_pdfs");
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir);
+        }
+
         const fileName = `pdf_${Date.now()}.pdf`;
-        const filePath = path.join(__dirname, "..", "generated_pdfs", fileName);
+        const filePath = path.join(dir, fileName);
+
+        // PDF de prueba
         fs.writeFileSync(filePath, "Contenido del PDF de prueba");
 
+        //  🌍 URL PUBLICA REAL
+        const publicUrl = `${BASE_URL}/generated_pdfs/${fileName}`;
+
+        // guardamos en BD
         const registro = new PDFRegistro({
             filePath,
-            url: `/generated_pdfs/${fileName}`,
+            url: publicUrl,
             email,
             celular,
             origen: "ticket"
@@ -30,26 +45,31 @@ const generarPDF = async (req, res) => {
 
         await nuevoHistorial.save();
 
+        // 📧 EMAIL (ahora con URL pública)
         if (email) {
             await sendEmail({
                 to: email,
                 subject: "Tu archivo PDF ha sido generado",
-                html: `<p>Tu archivo PDF está disponible. <a href="${registro.url}">Descargar</a></p>`
+                html: `
+                    <p>Hola 👋</p>
+                    <p>Tu archivo PDF está disponible acá:</p>
+                    <p><a href="${publicUrl}" target="_blank">${publicUrl}</a></p>
+                `
             });
         }
 
+        // 📱 WHATSAPP (sin localhost nunca más)
         if (celular) {
             await sendWhatsapp({
                 to: celular,
-                message: `Tu archivo PDF fue generado exitosamente. Descargalo acá: http://localhost:3000${registro.url}`
+                message: `Tu archivo PDF fue generado exitosamente. Descargalo acá: ${publicUrl}`
             });
         }
 
-        // ✅ AHORA INCLUIMOS fileName en la respuesta
         res.json({
             message: "PDF generado, enviado y registrado correctamente",
-            url: registro.url,
-            fileName // <- esto era lo que faltaba
+            url: publicUrl,
+            fileName
         });
 
     } catch (error) {
@@ -88,7 +108,10 @@ const buscarCliente = async (req, res) => {
 
 const registerPDF = async ({ originalFilePath, email, celular, origen }) => {
     try {
-        const url = `/uploads/${path.basename(originalFilePath)}`;
+        const fileName = path.basename(originalFilePath);
+
+        // URL pública correcta
+        const url = `${BASE_URL}/uploads/${fileName}`;
 
         const registro = new PDFRegistro({
             filePath: originalFilePath,
@@ -112,14 +135,14 @@ const registerPDF = async ({ originalFilePath, email, celular, origen }) => {
             await sendEmail({
                 to: email,
                 subject: "Tu archivo PDF ha sido registrado",
-                html: `<p>Tu archivo PDF fue subido correctamente. <a href="${url}">Descargar</a></p>`
+                html: `<p>Tu archivo PDF fue subido correctamente.<br><a href="${url}">${url}</a></p>`
             });
         }
 
         if (celular) {
             await sendWhatsapp({
                 to: celular,
-                message: `Tu archivo PDF fue cargado correctamente. Descargalo acá: http://localhost:3000${url}`
+                message: `Tu archivo PDF fue cargado correctamente. Descargalo acá: ${url}`
             });
         }
 
