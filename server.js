@@ -135,6 +135,10 @@ app.get("/tickets", (req, res) => res.sendFile(html("tickets.html")));
 app.get("/contacts", (req, res) => res.sendFile(html("contacts.html")));
 app.get("/plans", (req, res) => res.sendFile(html("planes.html")));
 
+
+app.use("/tickets", express.static(path.join(__dirname, "public/tickets")));
+
+
 // ===============================
 // MercadoPago
 // ===============================

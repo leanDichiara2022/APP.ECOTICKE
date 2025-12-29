@@ -19,7 +19,8 @@ router.post("/correo", async (req, res) => {
     }
 
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    const fileUrl = `${baseUrl}/generated_pdfs/${fileName}`;
+    const fileUrl = `${baseUrl}/tickets/${fileName}`;
+
 
     await sendEmail({
       to: email,
