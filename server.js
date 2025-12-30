@@ -125,10 +125,14 @@ app.get("/health", (req, res) =>
 
 // ===============================
 // 404 SOLO AL FINAL
-// ===============================
 app.use((req, res) => {
   res.status(404).sendFile(html("404.html"), (err) => {
-    res.status(404).send("404");
+    if (err) {
+      console.error("No se pudo enviar 404.html:", err.message);
+      if (!res.headersSent) {
+        res.status(404).send("404");
+      }
+    }
   });
 });
 

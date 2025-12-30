@@ -27,15 +27,15 @@ router.post("/correo", async (req, res) => {
     const fileUrl = buildPublicUrl(fileName);
 
     await sendEmail({
-      to: email,
-      subject: "Tu archivo PDF",
-      html: `
-        <p>Hola 👋</p>
-        <p>Podés abrir tu archivo desde este enlace:</p>
-        <p><a href="${fileUrl}">${fileUrl}</a></p>
-        <p>No es necesario descargar nada.</p>
-      `,
-    });
+  to: email,
+  subject,
+  html: `
+    <p>Hola,</p>
+    <p>Podés descargar tu PDF desde este enlace:</p>
+    <p><a href="${fileUrl}">${fileUrl}</a></p>
+  `
+});
+
 
     return res.status(200).json({
       success: true,
