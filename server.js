@@ -118,6 +118,7 @@ app.use("/api/tickets", require("./routes/tickets"));
 app.use("/api/contacts", require("./routes/contacts"));
 app.use("/api/pdf", require("./routes/pdfRoutes"));
 app.use("/api/upload-send", require("./routes/uploadAndSend"));
+app.use("/api", require("./routes/mensajeria"));
 
 // ===============================
 // HEALTH
