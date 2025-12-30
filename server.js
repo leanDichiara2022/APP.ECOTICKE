@@ -1,6 +1,3 @@
-require("dotenv").config();
-require("./db");
-
 const express = require("express");
 const path = require("path");
 const mongoose = require("mongoose");
@@ -12,10 +9,16 @@ const cookieParser = require("cookie-parser");
 const mercadopago = require("mercadopago");
 const fs = require("fs");
 
+require("dotenv").config();
+require("./db");
+
 const app = express();
 
+// ===============================
+// 📌 RUTA CORRECTA PARA ENVIAR PDF/LINKS
+// ===============================
 const enviarPDFRoutes = require("./routes/enviarPDF");
-app.use("/api", enviarPDFRoutes);
+app.use("/api/send", enviarPDFRoutes);
 
 // ===============================
 // BASE URL
