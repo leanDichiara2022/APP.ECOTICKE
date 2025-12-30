@@ -178,9 +178,9 @@
   <script src="/scripts/scripts.js?v=2"></script>
   <script src="/js/main.js?v=2"></script>
 
-  <!-- 🔥 AGREGO ESTO: fuerza dominio real y NO localhost -->
   <script>
-    const BASE_URL = window.location.origin;
+    /* 🔥 BASE URL FIJA AL DOMINIO DEL VPS */
+    const BASE_URL = "https://ecoticke.com";
   </script>
 
   <script>
@@ -249,7 +249,7 @@
         fd.append('extra', extraDetails);
 
         try {
-          const resp = await fetch(`${BASE_URL}${url}`, {   <!-- 👈 CORRECCIÓN CLAVE -->
+          const resp = await fetch(`${BASE_URL}${url}`, {
             method: 'POST',
             body: fd,
             credentials: 'include'
