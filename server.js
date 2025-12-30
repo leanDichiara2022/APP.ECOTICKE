@@ -14,6 +14,9 @@ const fs = require("fs");
 
 const app = express();
 
+const enviarPDFRoutes = require("./routes/enviarPDF");
+app.use("/api", enviarPDFRoutes);
+
 // ===============================
 // BASE URL
 // ===============================
