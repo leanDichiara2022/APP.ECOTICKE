@@ -85,7 +85,8 @@ const publicPath = path.join(__dirname, "public");
 app.use(express.static(publicPath));
 
 // generated_pdfs públicos
-const pdfPath = path.join(__dirname, "generated_pdfs");
+const pdfPath = path.join(__dirname, "public", "generated_pdfs");
+
 if (!fs.existsSync(pdfPath)) fs.mkdirSync(pdfPath);
 
 console.log("Carpeta PDFs:", pdfPath);
