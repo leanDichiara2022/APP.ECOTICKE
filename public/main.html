@@ -1,6 +1,3 @@
-<!-- PRUEBA SFTP -->
-<!-- cambio de sincronización -->
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -179,7 +176,6 @@
   <script src="/js/main.js?v=2"></script>
 
   <script>
-    /* 🔥 BASE URL FIJA AL DOMINIO DEL VPS */
     const BASE_URL = "https://ecoticke.com";
   </script>
 
@@ -242,7 +238,7 @@
         const extraDetails = document.getElementById('extraDetails').value.trim();
 
         const fd = new FormData();
-        fd.append('file', file);
+        fd.append('archivo', file);
         fd.append('filename', file.name);
         fd.append('phone', phone);
         fd.append('email', email);
@@ -257,7 +253,8 @@
 
           const data = await resp.json().catch(()=> ({}));
 
-          if (data?.url) window.open(data.url, '_blank');
+          if (data?.pdfUrl) window.open(data.pdfUrl, "_blank");
+          if (data?.whatsappLink) window.open(data.whatsappLink, "_blank");
 
         } catch(e){
           console.error(e);

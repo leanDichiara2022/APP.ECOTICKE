@@ -1,34 +1,25 @@
 const express = require("express");
-const multer = require("multer");
 const sendEmail = require("../utils/sendEmail");
 const generarWhatsappLink = require("../utils/sendWhatsapp");
 
 const router = express.Router();
 
-// 👉 permite leer multipart/form-data SIN archivos
-const upload = multer();
-
-// URL pública segura
 function buildPublicUrl(fileName) {
   const base = process.env.BASE_URL || "https://ecoticke.com";
   return `${base}/generated_pdfs/${fileName}`;
 }
 
-/**
- * ============================
- * 📧 ENVIAR LINK POR EMAIL
- * endpoint real:
- *      POST /api/send/email
- * ============================
- */
-router.post("/email", upload.none(), async (req, res) => {
+// ============================
+// 📧 Enviar PDF por correo
+// ============================
+router.post("/correo", async (req, res) => {
   try {
     const { email, fileName } = req.body;
 
     if (!email || !fileName) {
       return res.status(400).json({
         success: false,
-        error: "Faltan datos para enviar el correo",
+        error: "Faltan datos para enviar el PDF",
       });
     }
 
@@ -39,13 +30,12 @@ router.post("/email", upload.none(), async (req, res) => {
       subject: "Tu archivo solicitado",
       html: `
         <p>Hola,</p>
-        <p>Puedes descargar tu archivo desde este enlace:</p>
+        <p>Podés abrir tu archivo en el siguiente enlace:</p>
         <p><a href="${fileUrl}">${fileUrl}</a></p>
-        <p>El enlace permite abrir <strong>PDF, imágenes o cualquier archivo enviado</strong>.</p>
       `,
     });
 
-    return res.status(200).json({
+    return res.json({
       success: true,
       message: "Correo enviado correctamente",
       pdfUrl: fileUrl,
@@ -59,14 +49,10 @@ router.post("/email", upload.none(), async (req, res) => {
   }
 });
 
-/**
- * ============================
- * 📱 ENVIAR LINK POR WHATSAPP
- * endpoint real:
- *      POST /api/send/whatsapp
- * ============================
- */
-router.post("/whatsapp", upload.none(), async (req, res) => {
+// ============================
+// 📱 Enviar link por WhatsApp
+// ============================
+router.post("/whatsapp", async (req, res) => {
   try {
     const { phoneNumber, fileName, details } = req.body;
 
@@ -84,7 +70,7 @@ router.post("/whatsapp", upload.none(), async (req, res) => {
 
     const whatsappLink = generarWhatsappLink(cleanPhone, text);
 
-    return res.status(200).json({
+    return res.json({
       success: true,
       whatsappLink,
       pdfUrl: fileUrl,
