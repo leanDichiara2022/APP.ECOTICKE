@@ -1,64 +1,89 @@
 const express = require("express");
+const path = require("path");
+const multer = require("multer");
+
 const sendEmail = require("../utils/sendEmail");
 const generarWhatsappLink = require("../utils/sendWhatsapp");
 
 const router = express.Router();
 
+// aceptar multipart/form-data
+const upload = multer();
+
+// función segura para construir URL pública
 function buildPublicUrl(fileName) {
   const base = process.env.BASE_URL || "https://ecoticke.com";
   return `${base}/generated_pdfs/${fileName}`;
 }
 
-// ========================
-//  📧 EMAIL
-// ========================
-router.post("/correo", async (req, res) => {
-  try {
-    const { email, fileName } = req.body;
+/*
+ FRONTEND ENVÍA ESTO:
 
-    if (!email || !fileName) {
-      return res.status(400).json({ success: false, error: "Faltan datos" });
+ fd.append('archivo', file);
+ fd.append('filename', file.name);
+ fd.append('phone', phone);
+ fd.append('email', email);
+ fd.append('extra', extraDetails);
+
+*/
+
+// ======================================
+// 📧 ENVIAR EMAIL SOLO CON LINK
+// ======================================
+router.post("/send/email", upload.none(), async (req, res) => {
+  try {
+    const { email, filename } = req.body;
+
+    if (!email || !filename) {
+      return res.status(400).json({
+        success: false,
+        error: "Faltan datos para enviar email",
+      });
     }
 
-    const fileUrl = buildPublicUrl(fileName);
+    const fileUrl = buildPublicUrl(filename);
+
+    console.log("🔗 Enviaríamos email con link:", email, fileUrl);
 
     await sendEmail({
       to: email,
-      subject: "Tu archivo",
+      subject: "Tu ticket",
       html: `
         <p>Hola 👋</p>
         <p>Podés ver tu archivo acá:</p>
         <p><a href="${fileUrl}">${fileUrl}</a></p>
-      `
+      `,
     });
 
-    console.log("Enviaríamos email con link:", email, fileUrl);
-
-    return res.json({ success: true, pdfUrl: fileUrl });
-
-  } catch (err) {
-    console.error("Error correo:", err);
-    return res.status(500).json({ success: false, error: "No se pudo enviar correo" });
+    return res.json({
+      success: true,
+      pdfUrl: fileUrl,
+    });
+  } catch (e) {
+    console.error("EMAIL ERROR", e);
+    return res.status(500).json({ success: false });
   }
 });
 
-// ========================
-//  📱 WHATSAPP
-// ========================
-router.post("/whatsapp", async (req, res) => {
+// ======================================
+// 📱 ENVIAR WHATSAPP SOLO CON LINK
+// ======================================
+router.post("/send/whatsapp", upload.none(), async (req, res) => {
   try {
-    const { phoneNumber, phone, fileName, details } = req.body;
+    const { phone, filename, extra } = req.body;
 
-    const number = phoneNumber || phone;
-
-    if (!number || !fileName) {
-      return res.status(400).json({ success: false, error: "Faltan datos" });
+    if (!phone || !filename) {
+      return res.status(400).json({
+        success: false,
+        error: "Faltan datos para WhatsApp",
+      });
     }
 
-    const cleanPhone = number.replace(/\D/g, "");
-    const fileUrl = buildPublicUrl(fileName);
+    const cleanPhone = phone.replace(/\D/g, "");
 
-    const text = `${fileUrl}\n\n${details || ""}`;
+    const fileUrl = buildPublicUrl(filename);
+
+    const text = `${fileUrl}\n\n${extra || ""}`;
 
     const whatsappLink = generarWhatsappLink(cleanPhone, text);
 
@@ -67,10 +92,9 @@ router.post("/whatsapp", async (req, res) => {
       whatsappLink,
       pdfUrl: fileUrl,
     });
-
-  } catch (err) {
-    console.error("Error WhatsApp:", err);
-    return res.status(500).json({ success: false, error: "No se pudo generar el enlace" });
+  } catch (e) {
+    console.error("WHATSAPP ERROR", e);
+    return res.status(500).json({ success: false });
   }
 });
 
