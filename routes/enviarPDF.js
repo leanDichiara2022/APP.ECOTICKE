@@ -1,5 +1,4 @@
 const express = require("express");
-const path = require("path");
 const multer = require("multer");
 
 const sendEmail = require("../utils/sendEmail");
@@ -16,38 +15,86 @@ function buildPublicUrl(fileName) {
   return `${base}/generated_pdfs/${fileName}`;
 }
 
-/*
- FRONTEND ENVÍA ESTO:
-
- fd.append('archivo', file);
- fd.append('filename', file.name);
- fd.append('phone', phone);
- fd.append('email', email);
- fd.append('extra', extraDetails);
-
-*/
-
 // ======================================
-// 📧 ENVIAR EMAIL SOLO CON LINK
+// Normaliza nombres (filename / fileName / pdfName…)
 // ======================================
+function normalizeBody(body) {
+  return {
+    email:
+      body.email ||
+      body.correo ||
+      body.mail ||
+      null,
+
+    phone:
+      body.phone ||
+      body.phoneNumber ||
+      body.telefono ||
+      null,
+
+    filename:
+      body.filename ||
+      body.fileName ||
+      body.pdfName ||
+      body.name ||
+      null,
+
+    extra:
+      body.extra ||
+      body.details ||
+      body.mensaje ||
+      "",
+  };
+}
+
+/* -------------------------------------
+    EMAIL – RUTA NUEVA y VIEJA
+------------------------------------- */
+
+// nueva
 router.post("/send/email", upload.none(), async (req, res) => {
-  try {
-    const { email, filename } = req.body;
+  return handleEmail(req, res);
+});
 
-    if (!email || !filename) {
+// compatibilidad con frontend viejo
+router.post("/correo", upload.none(), async (req, res) => {
+  return handleEmail(req, res);
+});
+
+/* -------------------------------------
+    WHATSAPP – RUTA NUEVA y VIEJA
+------------------------------------- */
+
+// nueva
+router.post("/send/whatsapp", upload.none(), async (req, res) => {
+  return handleWhatsapp(req, res);
+});
+
+// compatibilidad con frontend viejo
+router.post("/whatsapp", upload.none(), async (req, res) => {
+  return handleWhatsapp(req, res);
+});
+
+/* -------------------------------------
+    IMPLEMENTACIÓN REAL
+------------------------------------- */
+
+async function handleEmail(req, res) {
+  try {
+    const data = normalizeBody(req.body);
+
+    if (!data.email || !data.filename) {
       return res.status(400).json({
         success: false,
         error: "Faltan datos para enviar email",
       });
     }
 
-    const fileUrl = buildPublicUrl(filename);
-
-    console.log("🔗 Enviaríamos email con link:", email, fileUrl);
+    const fileUrl = buildPublicUrl(data.filename);
 
     await sendEmail({
-      to: email,
-      subject: "Tu ticket",
+      to: data.email,
+      subject: "Tu archivo",
       html: `
         <p>Hola 👋</p>
         <p>Podés ver tu archivo acá:</p>
@@ -63,27 +110,24 @@ router.post("/send/email", upload.none(), async (req, res) => {
     console.error("EMAIL ERROR", e);
     return res.status(500).json({ success: false });
   }
-});
+}
 
-// ======================================
-// 📱 ENVIAR WHATSAPP SOLO CON LINK
-// ======================================
-router.post("/send/whatsapp", upload.none(), async (req, res) => {
+async function handleWhatsapp(req, res) {
   try {
-    const { phone, filename, extra } = req.body;
+    const data = normalizeBody(req.body);
 
-    if (!phone || !filename) {
+    if (!data.phone || !data.filename) {
       return res.status(400).json({
         success: false,
         error: "Faltan datos para WhatsApp",
       });
     }
 
-    const cleanPhone = phone.replace(/\D/g, "");
+    const cleanPhone = data.phone.replace(/\D/g, "");
 
-    const fileUrl = buildPublicUrl(filename);
+    const fileUrl = buildPublicUrl(data.filename);
 
-    const text = `${fileUrl}\n\n${extra || ""}`;
+    const text = `${fileUrl}\n\n${data.extra || ""}`;
 
     const whatsappLink = generarWhatsappLink(cleanPhone, text);
 
@@ -96,6 +140,6 @@ router.post("/send/whatsapp", upload.none(), async (req, res) => {
     console.error("WHATSAPP ERROR", e);
     return res.status(500).json({ success: false });
   }
-});
+}
 
 module.exports = router;
