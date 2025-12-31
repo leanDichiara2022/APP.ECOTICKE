@@ -2,6 +2,9 @@ const path = require("path");
 const fs = require("fs");
 const generatePDF = require("../utils/generatePdf");
 
+// 🔥 URL REAL DEL SITIO
+const BASE_URL = "https://ecoticke.com";
+
 const generarPDFController = async (req, res) => {
   try {
     console.log("📌 Petición recibida para generar PDF con datos:", req.body);
@@ -14,25 +17,28 @@ const generarPDFController = async (req, res) => {
     }
 
     const fileName = `factura_${Date.now()}.pdf`;
-    const outputPath = path.join(__dirname, "../generated_pdfs", fileName);
+
+    // 📂 carpeta correcta pública
+    const outputPath = path.join(__dirname, "../public/generated_pdfs", fileName);
 
     console.log("📝 Generando PDF en:", outputPath);
 
-    // Generar el PDF
     await generatePDF({ cliente, total }, plantilla, outputPath);
 
-    // Verificar si el archivo existe antes de responder
     if (!fs.existsSync(outputPath)) {
       console.error("❌ PDF no se generó correctamente.");
       return res.status(500).json({ error: "Error al generar el PDF. Archivo no encontrado." });
     }
 
+    // 🌍 URL ABSOLUTA
+    const publicUrl = `${BASE_URL}/generated_pdfs/${fileName}`;
+
     console.log("✅ PDF generado con éxito:", fileName);
-    
+
     return res.status(200).json({
       message: "PDF generado con éxito.",
       fileName,
-      urlDescarga: `/generated_pdfs/${fileName}`,
+      urlDescarga: publicUrl
     });
 
   } catch (error) {
