@@ -175,8 +175,9 @@
   <script src="/scripts/scripts.js?v=2"></script>
   <script src="/js/main.js?v=2"></script>
 
+  <!-- CAMBIO: BASE_URL dinámico -->
   <script>
-    const BASE_URL = "https://ecoticke.com";
+    const BASE_URL = window.location.origin;
   </script>
 
   <script>
@@ -228,6 +229,7 @@
       const sendWhatsappBtn = document.getElementById('sendWhatsappBtn');
       const sendEmailBtn = document.getElementById('sendEmailBtn');
 
+      // CAMBIO: función robusta
       async function sendFileToEndpoint(url) {
 
         const file = document.getElementById('archivo').files?.[0];
@@ -236,29 +238,46 @@
         const phone = document.getElementById('phoneNumber').value.trim();
         const email = document.getElementById('email').value.trim();
         const extraDetails = document.getElementById('extraDetails').value.trim();
+        const country = document.getElementById('countryCode').value.trim();
 
         const fd = new FormData();
         fd.append('archivo', file);
         fd.append('filename', file.name);
         fd.append('phone', phone);
+        fd.append('countryCode', country);
         fd.append('email', email);
         fd.append('extra', extraDetails);
 
         try {
           const resp = await fetch(`${BASE_URL}${url}`, {
             method: 'POST',
-            body: fd,
-            credentials: 'include'
+            body: fd
           });
 
-          const data = await resp.json().catch(()=> ({}));
+          if (!resp.ok) {
+            return alert('❌ Error en el servidor');
+          }
 
-          if (data?.pdfUrl) window.open(data.pdfUrl, "_blank");
-          if (data?.whatsappLink) window.open(data.whatsappLink, "_blank");
+          const data = await resp.json();
+
+          // link directo generado en backend
+          if (data.fileUrl) {
+            window.open(data.fileUrl, "_blank");
+          }
+
+          // enlace de WhatsApp
+          if (data.whatsappLink) {
+            window.open(data.whatsappLink, "_blank");
+          }
+
+          // fallback
+          if (!data.fileUrl && !data.whatsappLink) {
+            alert('⚠️ No se recibió ningún link desde el servidor');
+          }
 
         } catch(e){
           console.error(e);
-          alert('Error en el envío');
+          alert('❌ Error en el envío');
         }
       }
 

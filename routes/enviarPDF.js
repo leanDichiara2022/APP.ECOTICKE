@@ -9,61 +9,53 @@ function buildPublicUrl(fileName) {
   return `${base}/generated_pdfs/${fileName}`;
 }
 
-// ============================
-// 📧 Enviar PDF por correo
-// ============================
+// ========================
+//  📧 EMAIL
+// ========================
 router.post("/correo", async (req, res) => {
   try {
     const { email, fileName } = req.body;
 
     if (!email || !fileName) {
-      return res.status(400).json({
-        success: false,
-        error: "Faltan datos para enviar el PDF",
-      });
+      return res.status(400).json({ success: false, error: "Faltan datos" });
     }
 
     const fileUrl = buildPublicUrl(fileName);
 
     await sendEmail({
       to: email,
-      subject: "Tu archivo solicitado",
+      subject: "Tu archivo",
       html: `
-        <p>Hola,</p>
-        <p>Podés abrir tu archivo en el siguiente enlace:</p>
+        <p>Hola 👋</p>
+        <p>Podés ver tu archivo acá:</p>
         <p><a href="${fileUrl}">${fileUrl}</a></p>
-      `,
+      `
     });
 
-    return res.json({
-      success: true,
-      message: "Correo enviado correctamente",
-      pdfUrl: fileUrl,
-    });
-  } catch (error) {
-    console.error("❌ Error enviando correo:", error);
-    return res.status(500).json({
-      success: false,
-      error: "No se pudo enviar el correo",
-    });
+    console.log("Enviaríamos email con link:", email, fileUrl);
+
+    return res.json({ success: true, pdfUrl: fileUrl });
+
+  } catch (err) {
+    console.error("Error correo:", err);
+    return res.status(500).json({ success: false, error: "No se pudo enviar correo" });
   }
 });
 
-// ============================
-// 📱 Enviar link por WhatsApp
-// ============================
+// ========================
+//  📱 WHATSAPP
+// ========================
 router.post("/whatsapp", async (req, res) => {
   try {
-    const { phoneNumber, fileName, details } = req.body;
+    const { phoneNumber, phone, fileName, details } = req.body;
 
-    if (!phoneNumber || !fileName) {
-      return res.status(400).json({
-        success: false,
-        error: "Faltan datos para WhatsApp",
-      });
+    const number = phoneNumber || phone;
+
+    if (!number || !fileName) {
+      return res.status(400).json({ success: false, error: "Faltan datos" });
     }
 
-    const cleanPhone = phoneNumber.replace(/\D/g, "");
+    const cleanPhone = number.replace(/\D/g, "");
     const fileUrl = buildPublicUrl(fileName);
 
     const text = `${fileUrl}\n\n${details || ""}`;
@@ -75,12 +67,10 @@ router.post("/whatsapp", async (req, res) => {
       whatsappLink,
       pdfUrl: fileUrl,
     });
-  } catch (error) {
-    console.error("❌ Error generando enlace de WhatsApp:", error);
-    return res.status(500).json({
-      success: false,
-      error: "No se pudo generar el enlace",
-    });
+
+  } catch (err) {
+    console.error("Error WhatsApp:", err);
+    return res.status(500).json({ success: false, error: "No se pudo generar el enlace" });
   }
 });
 
